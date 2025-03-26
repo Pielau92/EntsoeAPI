@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Installer
+*.exe
+*.msi
+
+# Logs
+*.log
+
+.idea
+
+data/
+*.csv
