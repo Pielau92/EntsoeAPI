@@ -41,7 +41,11 @@ start = query.date_today - pd.DateOffset(days=1)
 end = query.date_today
 historical_yesterday = query.get_all_historical_data(start, end)
 
+# Export as csv files
+forecast_yesterday.to_csv('../data/forecast_yesterday.csv')
+forecast_today.to_csv('../data/forecast_today.csv')
+historical_yesterday.to_csv('../data/historical_yesterday.csv')
 
-# WRITE pandas
-# r.to_csv('outfile.csv')
-
+if forecast_tomorrow:
+    forecast_tomorrow.to_csv('../data/forecast_tomorrow.csv')
+pass
