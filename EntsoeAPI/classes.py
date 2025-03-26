@@ -78,6 +78,35 @@ class DataQuery:
 
         return df
 
+    def get_all_historical_data(self, start, end):
+
+        data = dict()
+
+        # total load [MW]
+        df_response = self.client.query_load(self.country_code, start=start, end=end)
+        data['total_load'] = df_response['Actual Load']
+
+        # wind onshore and solar generation [MW]
+        df_response = self.client.query_generation(self.country_code, start=start, end=end, psr_type=None)
+        data['solar_generation'] = df_response[('Solar', 'Actual Aggregated')]
+        data['wind_onshore_generation'] = df_response[('Wind Onshore', 'Actual Aggregated')]
+
+        # crossborder physical flow (scheduled commercial exchange with neighbors) [MW]
+        for neighbour in NEIGHBOURS[self.country_code]:
+            data[f'scheduled_exchange_{neighbour}'] = self.client.query_crossborder_flows(
+                country_code_from=self.country_code,
+                country_code_to=neighbour,
+                end=end,
+                start=start,
+                lookup_bzones=True)
+
+        # save data as DataFrame
+        df = create_empty_hourly_df(start, end)
+        for key in data:
+            df[key] = data[key]
+
+        return df
+
 
 class PathConfig:
 

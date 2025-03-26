@@ -36,4 +36,12 @@ else:
     end += pd.DateOffset(days=1)
     tomorrow = query.get_all_day_ahead_data(start, end)
 
+# historical yesterday
+start = query.date_today - pd.DateOffset(days=1)
+end = query.date_today
+historical_yesterday = query.get_all_historical_data(start, end)
+
+
+# WRITE pandas
+# r.to_csv('outfile.csv')
 
