@@ -5,6 +5,7 @@ import pandas as pd
 from configparser import ConfigParser
 from entsoe import EntsoePandasClient
 from entsoe.mappings import lookup_area, NEIGHBOURS
+from EntsoeAPI.utils import create_empty_hourly_df
 
 
 class DataQuery:
@@ -80,7 +81,12 @@ class DataQuery:
                 dayahead=False,
             )
 
-        return data
+        # save data as DataFrame
+        df = create_empty_hourly_df(start, end)
+        for key in data:
+            df[key] = data[key]
+
+        return df
 
 
 class PathConfig:
