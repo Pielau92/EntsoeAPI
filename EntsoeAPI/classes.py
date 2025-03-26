@@ -30,6 +30,57 @@ class DataQuery:
         date_today = pd.to_datetime('today').normalize()  # datetime: today at midnight
         date_today = pd.Timestamp(date_today, tz=self.tz)  # add timezone information
         self.date_today = date_today
+    
+    def get_all_day_ahead_data(self):
+
+        if datetime.datetime.now().time() < datetime.datetime.strptime(self.day_ahead_deadline, '%H:%M').time():
+            print(f'Day ahead prognosis data not available until today {self.day_ahead_deadline}')
+            return
+            # start = self.date_today
+            # end = start + pd.DateOffset(days=1)
+        else:
+            start = self.date_today + pd.DateOffset(days=1)
+            end = start + pd.DateOffset(days=1)
+
+        # energy prices
+        energy_prices = self.client.query_day_ahead_prices(
+            country_code=self.country_code,
+            start=start,
+            end=end,
+        )
+
+        # generation forecast wind onshore and solar
+        df_response = self.client.query_wind_and_solar_forecast(
+            self.country_code,
+            start=start,
+            end=end,
+            psr_type=None,
+        )
+        solar_generation = df_response['Solar']
+        wind_onshore_generation = df_response['Wind Onshore']
+
+        # total load
+        df_response = self.client.query_load_and_forecast(
+            self.country_code,
+            start=start,
+            end=end,
+        )
+        total_load = df_response['Actual Load']
+
+        # crossborder physical flow (scheduled commercial exchange with neighbors)
+        result = {}
+        for neighbour in NEIGHBOURS[self.country_code]:
+            result[neighbour] = self.client.query_scheduled_exchanges(
+                country_code_from=self.country_code,
+                country_code_to=neighbour,
+                start=start,
+                end=end,
+                dayahead=False,
+            )
+
+        df_response = pd.DataFrame(result)
+        crossborder_phyical_flow = df_response.resample('h').first()
+
 
 
 class PathConfig:

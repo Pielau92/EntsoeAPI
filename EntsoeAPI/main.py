@@ -16,3 +16,5 @@ def get_root_dir():
 
 query = DataQuery(get_root_dir())
 
+query.get_all_day_ahead_data()
+
