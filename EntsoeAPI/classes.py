@@ -32,17 +32,7 @@ class DataQuery:
         date_today = pd.Timestamp(date_today, tz=self.tz)  # add timezone information
         self.date_today = date_today
 
-    def get_all_day_ahead_data(self, today: bool = False):
-
-        if today:
-            start = self.date_today
-            end = start + pd.DateOffset(days=1)
-        elif datetime.datetime.now().time() < datetime.datetime.strptime(self.day_ahead_deadline, '%H:%M').time():
-            print(f'Day ahead prognosis data not available until today {self.day_ahead_deadline}')
-            return
-        else:
-            start = self.date_today + pd.DateOffset(days=1)
-            end = start + pd.DateOffset(days=1)
+    def get_all_day_ahead_data(self, start: pd.Timestamp, end: pd.Timestamp):
 
         data = dict()
 
