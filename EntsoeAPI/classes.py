@@ -46,14 +46,14 @@ class DataQuery:
 
         data = dict()
 
-        # energy prices
+        # energy prices [€/MWh]
         data['energy_prices'] = self.client.query_day_ahead_prices(
             country_code=self.country_code,
             start=start,
             end=end,
         )
 
-        # generation forecast wind onshore and solar
+        # generation forecast wind onshore and solar [MW]
         df_response = self.client.query_wind_and_solar_forecast(
             self.country_code,
             start=start,
@@ -63,7 +63,7 @@ class DataQuery:
         data['solar_generation'] = df_response['Solar']
         data['wind_onshore_generation'] = df_response['Wind Onshore']
 
-        # total load
+        # total load [MW]
         df_response = self.client.query_load_and_forecast(
             self.country_code,
             start=start,
@@ -71,7 +71,7 @@ class DataQuery:
         )
         data['total_load'] = df_response['Actual Load']
 
-        # crossborder physical flow (scheduled commercial exchange with neighbors)
+        # crossborder physical flow (scheduled commercial exchange with neighbors) [MW]
         for neighbour in NEIGHBOURS[self.country_code]:
             data[f'scheduled_exchange_{neighbour}'] = self.client.query_scheduled_exchanges(
                 country_code_from=self.country_code,
