@@ -1,4 +1,15 @@
+import os, sys
+
 import pandas as pd
+
+
+def get_root_dir() -> str:
+    """Get root directory path."""
+
+    if getattr(sys, 'frozen', False):  # if program is run from an executable .exe file
+        return os.path.dirname(os.path.dirname(sys.executable))
+    else:  # if program is run from IDE or command window
+        return os.path.dirname(os.path.dirname(__file__))
 
 
 def create_empty_hourly_df(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
