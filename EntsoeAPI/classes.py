@@ -48,7 +48,7 @@ class DataQuery:
         data = dict()
 
         # energy prices [€/MWh]
-        data['energy_prices'] = self.client.query_day_ahead_prices(
+        data['energy_prices [EUR/MWh]'] = self.client.query_day_ahead_prices(
             country_code=self.country_code,
             start=start,
             end=end,
@@ -61,8 +61,8 @@ class DataQuery:
             end=end,
             psr_type=None,
         )
-        data['solar_generation'] = df_response['Solar']
-        data['wind_onshore_generation'] = df_response['Wind Onshore']
+        data['solar_generation [MW]'] = df_response['Solar']
+        data['wind_onshore_generation [MW]'] = df_response['Wind Onshore']
 
         # total load forecast[MW]
         df_response = self.client.query_load_and_forecast(
@@ -70,11 +70,11 @@ class DataQuery:
             start=start,
             end=end,
         )
-        data['total_load'] = df_response['Forecasted Load']
+        data['total_load [MW]'] = df_response['Forecasted Load']
 
         # cross-border physical flow forecast (scheduled commercial exchange with neighbors) [MW]
         for neighbour in NEIGHBOURS[self.country_code]:
-            data[f'scheduled_exchange_{neighbour}'] = self.client.query_scheduled_exchanges(
+            data[f'scheduled_exchange_{neighbour} [MW]'] = self.client.query_scheduled_exchanges(
                 country_code_from=self.country_code,
                 country_code_to=neighbour,
                 start=start,
@@ -102,16 +102,16 @@ class DataQuery:
 
         # total load [MW]
         df_response = self.client.query_load(self.country_code, start=start, end=end)
-        data['total_load'] = df_response['Actual Load']
+        data['total_load [MW]'] = df_response['Actual Load']
 
         # wind onshore and solar generation [MW]
         df_response = self.client.query_generation(self.country_code, start=start, end=end, psr_type=None)
-        data['solar_generation'] = df_response[('Solar', 'Actual Aggregated')]
-        data['wind_onshore_generation'] = df_response[('Wind Onshore', 'Actual Aggregated')]
+        data['solar_generation [MW]'] = df_response[('Solar', 'Actual Aggregated')]
+        data['wind_onshore_generation [MW]'] = df_response[('Wind Onshore', 'Actual Aggregated')]
 
         # cross-border physical flow (scheduled commercial exchange with neighbors) [MW]
         for neighbour in NEIGHBOURS[self.country_code]:
-            data[f'scheduled_exchange_{neighbour}'] = self.client.query_crossborder_flows(
+            data[f'scheduled_exchange_{neighbour} [MW]'] = self.client.query_crossborder_flows(
                 country_code_from=self.country_code,
                 country_code_to=neighbour,
                 end=end,
