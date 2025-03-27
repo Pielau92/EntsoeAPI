@@ -70,7 +70,7 @@ class DataQuery:
             start=start,
             end=end,
         )
-        data['total_load'] = df_response['Actual Load']
+        data['total_load'] = df_response['Forecasted Load']
 
         # cross-border physical flow forecast (scheduled commercial exchange with neighbors) [MW]
         for neighbour in NEIGHBOURS[self.country_code]:
