@@ -1,6 +1,7 @@
 import pandas as pd
 
-def create_empty_hourly_df(start:pd.Timestamp, end:pd.Timestamp):
+
+def create_empty_hourly_df(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """Create empty DataFrame with hourly DatetimeIndex.
 
     :param pd.Timestamp start:  start time
@@ -12,4 +13,3 @@ def create_empty_hourly_df(start:pd.Timestamp, end:pd.Timestamp):
     index = pd.date_range(start=start, end=end, freq='h')
 
     return pd.DataFrame(index=index)
-

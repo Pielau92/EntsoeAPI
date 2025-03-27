@@ -1,4 +1,4 @@
-import datetime, os
+import os
 
 import pandas as pd
 
@@ -9,30 +9,41 @@ from EntsoeAPI.utils import create_empty_hourly_df
 
 
 class DataQuery:
-    """Class for storing configurations"""
+    """Class for storing data query configurations."""
 
-    def __init__(self, root_dir):
-        self.api_key = str()
-        self.country_code = str()
-        self.day_ahead_deadline = str()
+    def __init__(self, root_dir: str):
+        self.api_key = str()  # API security token from ENTSO E
+        self.country_code = str()  # unique code of target country - see entsoe.mappings.Area class for complete table
+        self.day_ahead_deadline = str()  # deadline for publication of day ahead data
 
+        # paths
         self.path = PathConfig(self, root_dir)
         self.settings = Settings(self)
         self.settings.load_settings()
         self.settings.apply_settings()
 
-        self.tz = lookup_area(self.country_code).tz
-        self.date_today = None
+        self.tz = lookup_area(self.country_code).tz  # time zone
+        self.date_today = None  # today's date
 
-        self.client = EntsoePandasClient(api_key=self.api_key)
+        self.client = EntsoePandasClient(api_key=self.api_key)  # ENTSO E client
         self.set_date_today()
 
-    def set_date_today(self):
+    def set_date_today(self) -> None:
+        """Set today's date."""
+
         date_today = pd.to_datetime('today').normalize()  # datetime: today at midnight
         date_today = pd.Timestamp(date_today, tz=self.tz)  # add timezone information
-        self.date_today = date_today
+        self.date_today = date_today  # set value
 
-    def get_all_day_ahead_data(self, start: pd.Timestamp, end: pd.Timestamp):
+    def get_all_day_ahead_data(self, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+        """Get all day ahead data for a specified time period.
+
+        The time period can be in the past or future, depending on the dataset.
+
+        :param start: start datetime of requested time period
+        :param end: end datetime of requested time period
+        :return: DataFrame with requested data
+        """
 
         data = dict()
 
@@ -43,7 +54,7 @@ class DataQuery:
             end=end,
         )
 
-        # generation forecast wind onshore and solar [MW]
+        # wind onshore and solar generation forecast [MW]
         df_response = self.client.query_wind_and_solar_forecast(
             self.country_code,
             start=start,
@@ -53,7 +64,7 @@ class DataQuery:
         data['solar_generation'] = df_response['Solar']
         data['wind_onshore_generation'] = df_response['Wind Onshore']
 
-        # total load [MW]
+        # total load forecast[MW]
         df_response = self.client.query_load_and_forecast(
             self.country_code,
             start=start,
@@ -61,7 +72,7 @@ class DataQuery:
         )
         data['total_load'] = df_response['Actual Load']
 
-        # crossborder physical flow (scheduled commercial exchange with neighbors) [MW]
+        # cross-border physical flow forecast (scheduled commercial exchange with neighbors) [MW]
         for neighbour in NEIGHBOURS[self.country_code]:
             data[f'scheduled_exchange_{neighbour}'] = self.client.query_scheduled_exchanges(
                 country_code_from=self.country_code,
@@ -71,14 +82,21 @@ class DataQuery:
                 dayahead=False,
             )
 
-        # save data as DataFrame
+        # save collected data as DataFrame
+        # assumes datetimes from df automatically (if data has >1 value per hour, only the first value is saved)
         df = create_empty_hourly_df(start, end)
         for key in data:
             df[key] = data[key]
 
         return df
 
-    def get_all_historical_data(self, start, end):
+    def get_all_historical_data(self, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+        """Get all historic data for a specified time period.
+
+        :param start: start datetime of requested time period
+        :param end: end datetime of requested time period
+        :return: DataFrame with requested data
+        """
 
         data = dict()
 
@@ -91,7 +109,7 @@ class DataQuery:
         data['solar_generation'] = df_response[('Solar', 'Actual Aggregated')]
         data['wind_onshore_generation'] = df_response[('Wind Onshore', 'Actual Aggregated')]
 
-        # crossborder physical flow (scheduled commercial exchange with neighbors) [MW]
+        # cross-border physical flow (scheduled commercial exchange with neighbors) [MW]
         for neighbour in NEIGHBOURS[self.country_code]:
             data[f'scheduled_exchange_{neighbour}'] = self.client.query_crossborder_flows(
                 country_code_from=self.country_code,
@@ -109,13 +127,14 @@ class DataQuery:
 
 
 class PathConfig:
+    """Class for storing path information."""
 
-    def __init__(self, data_query, root_dir):
+    def __init__(self, data_query: any, root_dir: str):
         self.data_query = data_query
         self.root = root_dir
 
     @property
-    def settings(self, filename='settings.ini'):
+    def settings(self, filename: str = 'settings.ini'):
         """Path to directory."""
         return os.path.join(self.root, filename)
 
@@ -123,27 +142,27 @@ class PathConfig:
 class Settings:
     """Class for storing settings of SimulationSeries object."""
 
-    def __init__(self, data_query):
+    def __init__(self, data_query: any):
         self.data_query = data_query
         self._save_path = data_query.path.settings
         self._settings = ConfigParser()
         self._settings.optionxform = str  # keeps capital letters when reading .ini file
 
-    def load_settings(self):
+    def load_settings(self) -> None:
         try:
             self._settings.read(self._save_path)
         except:
             print("Format error in settings file, check settings.ini")
             raise SystemExit()
 
-    def apply_settings(self):
+    def apply_settings(self) -> None:
         """Apply imported settings to SimulationSeries object.
 
         Applies the imported settings from the settings Excel file to the corresponding attributes of the
         SimulationSeries object with the same name.
         """
 
-        def apply_setting():
+        def apply_setting() -> None:
             """Apply setting value to sim_series.
 
             Applies the individual settings to the corresponding (name of setting and of class attribute must match).
