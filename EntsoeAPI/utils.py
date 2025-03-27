@@ -21,6 +21,6 @@ def create_empty_hourly_df(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFra
     """
 
     # index with hourly timestamps
-    index = pd.date_range(start=start, end=end, freq='h')
+    index = pd.date_range(start=start, end=end, freq='h')[:-1]  # drop entry for midnight
 
     return pd.DataFrame(index=index)
