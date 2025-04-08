@@ -6,7 +6,7 @@ Historical data contains the following variables: total load [MW], solar generat
 wind onshore generation [MW], cross-border physical flow with neighbors [MW].
 Forecast data also contains energy price data [€/MWh].
 
-The following queries are carried out in the main.py module (for Vienna, Austria):
+The following queries are carried out in the main.py module (for Austria):
 - historical data from 2022 to the current year (included)
 - day ahead forecast data for the current day, the past day and (if available) the next
 day
