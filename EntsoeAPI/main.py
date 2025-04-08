@@ -2,7 +2,7 @@ import datetime
 
 import pandas as pd
 
-from classes import DataQuery
+from dataquery import DataQuery
 from utils import get_root_dir
 
 query = DataQuery(get_root_dir())
