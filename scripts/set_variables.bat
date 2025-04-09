@@ -4,13 +4,13 @@ rem Name of Inno Setup Script
 set INNO_SETUP_SCRIPT_NAME=DUMMY.iss
 
 rem Name of Project
-set PROJECT_NAME=DUMMY
+set PROJECT_NAME=EntsoeAPI
 
 rem Are you using miniconda3 or anaconda3?
 set CONDA=miniconda3
 
 rem Name of your virtual environment (for main modules)
-set VENV_NAME=DUMMY
+set VENV_NAME=EntsoeAPI
 
 rem ---------------DO NOT CHANGE BATCH FILE AFTER THIS LINE----------------
 
