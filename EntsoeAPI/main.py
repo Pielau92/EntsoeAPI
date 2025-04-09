@@ -2,8 +2,8 @@ import datetime
 
 import pandas as pd
 
-from dataquery import DataQuery
-from utils import get_root_dir
+from EntsoeAPI.dataquery import DataQuery
+from EntsoeAPI.utils import get_root_dir
 
 query = DataQuery(get_root_dir())
 today = query.date_today  # today's date
