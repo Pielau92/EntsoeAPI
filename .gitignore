@@ -21,3 +21,6 @@ dist/
 data/
 *.csv
 *.spec
+/docs/_build/
+/docs/_static/
+/docs/_templates/
