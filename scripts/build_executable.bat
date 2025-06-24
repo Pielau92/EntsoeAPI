@@ -17,7 +17,7 @@ if %errorlevel% neq 0 (
 )
 
 echo Copying executable into %PROJECT_PATH%\%PROJECT_NAME%
-xcopy %PROJECT_PATH%\dist\main.exe %PROJECT_PATH%\%PROJECT_NAME% /y || (exit /b %errorlevel%)
+xcopy %PROJECT_PATH%\dist\main.exe %PROJECT_PATH%\src\%PROJECT_NAME% /y || (exit /b %errorlevel%)
 
 echo Executable created successfully!
 endlocal

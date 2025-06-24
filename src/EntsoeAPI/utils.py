@@ -5,21 +5,41 @@ import pandas as pd
 from configparser import ConfigParser
 
 
+def get_pardir(path: str, levels: int = 1) -> str:
+    """Get parent directory of given path.
+
+    It is possible to go up multiple levels using the levels parameter.
+
+    :param str path: initial path
+    :param int levels: determines how many levels upwards the function goes
+    :return: parent directory, single (default) or multiple levels upwards
+    """
+
+    pardir = path
+    for _ in range(levels):
+        pardir = os.path.dirname(pardir)
+
+    return pardir
+
+
 def get_root_dir() -> str:
     """Get root directory path."""
 
-    if getattr(sys, 'frozen', False):  # if program is run from an executable .exe file
-        return os.path.dirname(os.path.dirname(sys.executable))
-    else:  # if program is run from IDE or command window
-        return os.path.dirname(os.path.dirname(__file__))
+    # if program is run from...
+    if getattr(sys, 'frozen', False):  # an executable .exe file
+        filepath = sys.executable
+    else:  # IDE or command window
+        filepath = __file__
+
+    return get_pardir(path=filepath, levels=3)
 
 
 def create_empty_hourly_df(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """Create empty DataFrame with hourly DatetimeIndex.
 
-    :param pd.Timestamp start:  start time
+    :param pd.Timestamp start: start time
     :param pd.Timestamp end: end time (included)
-    :return: empty DataFrame with hourly DatetimeIndex.
+    :return: empty DataFrame with hourly DatetimeIndex
     """
 
     # index with hourly timestamps
