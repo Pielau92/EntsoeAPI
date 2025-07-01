@@ -121,5 +121,3 @@ class DataQuery:
             df[key] = data[key]
 
         return df
-
-

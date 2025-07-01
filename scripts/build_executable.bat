@@ -8,7 +8,7 @@ rem Change directory
 cd %PROJECT_PATH%
 
 echo Creating .exe file with PyInstaller...
-%PYINSTALLER_PATH% %MAIN_PATH% --clean --onefile
+%PYINSTALLER_PATH% %MAIN_PATH% --clean --onefile --paths=%SRC_PATH%
 
 rem Check for error
 if %errorlevel% neq 0 (
@@ -17,7 +17,7 @@ if %errorlevel% neq 0 (
 )
 
 echo Copying executable into %PROJECT_PATH%\%PROJECT_NAME%
-xcopy %PROJECT_PATH%\dist\main.exe %PROJECT_PATH%\%PROJECT_NAME% /y || (exit /b %errorlevel%)
+xcopy %PROJECT_PATH%\dist\main.exe %PROJECT_PATH%\src\%PROJECT_NAME% /y || (exit /b %errorlevel%)
 
 echo Executable created successfully!
 endlocal

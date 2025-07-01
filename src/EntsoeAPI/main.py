@@ -1,3 +1,4 @@
+import os
 import datetime
 
 import pandas as pd
@@ -5,7 +6,9 @@ import pandas as pd
 from EntsoeAPI.dataquery import DataQuery
 from EntsoeAPI.utils import get_root_dir
 
-query = DataQuery(get_root_dir())
+root = get_root_dir()
+
+query = DataQuery(root)
 today = query.date_today  # today's date
 
 # gather request parameters
@@ -51,7 +54,7 @@ for _key in params:
         continue
 
     # export to csv
-    export_path = f'../data/{req_type}_{period}.csv'
+    export_path = os.path.join(root, 'data', f'{req_type}_{period}.csv')
     print(f'Exporting to {export_path}')
     data.to_csv(export_path)
 
