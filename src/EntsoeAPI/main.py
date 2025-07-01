@@ -3,8 +3,8 @@ import datetime
 
 import pandas as pd
 
-from src.EntsoeAPI.dataquery import DataQuery
-from src.EntsoeAPI.utils import get_root_dir
+from EntsoeAPI.dataquery import DataQuery
+from EntsoeAPI.utils import get_root_dir
 
 root = get_root_dir()
 

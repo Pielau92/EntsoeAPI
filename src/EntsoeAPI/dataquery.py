@@ -2,7 +2,7 @@ import pandas as pd
 
 from entsoe import EntsoePandasClient
 from entsoe.mappings import lookup_area, NEIGHBOURS
-from src.EntsoeAPI.utils import create_empty_hourly_df, PathConfig, Settings
+from EntsoeAPI.utils import create_empty_hourly_df, PathConfig, Settings
 
 
 class DataQuery:

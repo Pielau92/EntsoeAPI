@@ -8,7 +8,7 @@ rem Change directory
 cd %PROJECT_PATH%
 
 echo Creating .exe file with PyInstaller...
-%PYINSTALLER_PATH% %MAIN_PATH% --clean --onefile
+%PYINSTALLER_PATH% %MAIN_PATH% --clean --onefile --paths=%SRC_PATH%
 
 rem Check for error
 if %errorlevel% neq 0 (
