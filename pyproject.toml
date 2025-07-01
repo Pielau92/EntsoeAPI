@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "EntsoeAPI"
+version = "0.1.0"
+description = "Kurzbeschreibung deines Projekts"
+authors = [
+    { name="Dein Name", email="dein.email@example.com" }
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+dependencies = [
+    "pandas~=2.2.3",
+    "entsoe-py~=0.6.18"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
