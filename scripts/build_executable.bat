@@ -8,7 +8,7 @@ rem Change directory
 cd %PROJECT_PATH%
 
 echo Creating .exe file with PyInstaller...
-%PYINSTALLER_PATH% %MAIN_PATH% --clean --onefile --paths=%SRC_PATH%
+%PYINSTALLER_PATH% %MAIN_PATH% --clean --onefile --paths=%SRC_PATH% --add-binary "%VENV_PATH%/DLLs/pyexpat.pyd;dlls" --add-binary "%VENV_PATH%/Library/bin/libexpat.dll;." --add-binary "%VENV_PATH%/Library/bin/libcrypto-3-x64.dll;." --add-binary "%VENV_PATH%/Library/bin/libssl-3-x64.dll;." --add-binary "%VENV_PATH%/Library/bin/liblzma.dll;." --add-binary "%VENV_PATH%/Library/bin/LIBBZ2.dll;." --add-binary "%VENV_PATH%/Library/bin/sqlite3.dll;." --add-binary "%VENV_PATH%/Library/bin/tk86t.dll;." --add-binary "%VENV_PATH%/Library/bin/tcl86t.dll;." --add-binary "%VENV_PATH%/Library/bin/ffi.dll;."
 
 rem Check for error
 if %errorlevel% neq 0 (
