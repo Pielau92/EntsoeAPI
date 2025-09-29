@@ -115,6 +115,10 @@ class DataQuery:
                 start=start,
                 lookup_bzones=True)
 
+        # day ahead price data [€/MWh]
+        df_response = self.client.query_day_ahead_prices(self.country_code, start=start, end=end, resolution='15min')
+        data['day_ahead [€/MWh]'] = df_response
+
         # save data as DataFrame
         df = create_empty_hourly_df(start, end)
         for key in data:
