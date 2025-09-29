@@ -34,7 +34,7 @@ else:
 years = list(range(2022, datetime.date.today().year + 1))
 for _year in years:
     start = pd.Timestamp(year=_year, month=1, day=1, hour=0, minute=0, second=0, tz=query.tz)
-    end = start + pd.DateOffset(years=1) - pd.Timedelta(hours=1)
+    end = start + pd.DateOffset(years=1)
     params[('historical', str(_year))] = {'start': start, 'end': end}
 
 # perform API requests and csv export
