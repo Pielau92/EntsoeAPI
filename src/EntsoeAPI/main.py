@@ -25,8 +25,9 @@ params = {
 }
 
 # add forecast data request for tomorrow, if available
-if datetime.datetime.now().time() < datetime.datetime.strptime(query.day_ahead_deadline, '%H:%M').time():
-    print(f'Day ahead prognosis data not available until today {query.day_ahead_deadline}.')
+if datetime.datetime.now().time() < datetime.datetime.strptime(query.configs.general.day_ahead_deadline,
+                                                               '%H:%M').time():
+    print(f'Day ahead prognosis data not available until today {query.configs.general.day_ahead_deadline}.')
 else:
     params[('forecast', 'tomorrow')] = {'start': today, 'end': today + pd.DateOffset(days=1)}
 
