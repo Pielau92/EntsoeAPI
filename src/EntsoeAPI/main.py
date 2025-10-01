@@ -3,6 +3,8 @@ import datetime
 
 import pandas as pd
 
+from entsoe.exceptions import NoMatchingDataError
+
 from EntsoeAPI.dataquery import DataQuery
 from EntsoeAPI.utils import get_root_dir
 
@@ -46,13 +48,16 @@ for _key in params:
     end: pd.Timestamp = params[_key]['end']
 
     print(f'Requesting data: {req_type}, {period}.')
-    if req_type == 'forecast':
-        data = query.get_all_day_ahead_data(start, end)
-    elif req_type == 'historical':
-        data = query.get_all_historical_data(start, end)
-    else:
-        print(f'Unknown request type "{req_type}"')
-        continue
+    try:
+        if req_type == 'forecast':
+            data = query.get_all_day_ahead_data(start, end)
+        elif req_type == 'historical':
+            data = query.get_all_historical_data(start, end)
+        else:
+            print(f'Unknown request type "{req_type}"')
+            continue
+    except NoMatchingDataError:
+        print(f'NoMatchingDataError encountered, skipping request...')
 
     # export to csv
     export_path = os.path.join(root, 'data', f'{req_type}_{period}.csv')
