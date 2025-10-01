@@ -3,6 +3,8 @@ import datetime
 
 import pandas as pd
 
+from entsoe.exceptions import NoMatchingDataError
+
 from EntsoeAPI.dataquery import DataQuery
 from EntsoeAPI.utils import get_root_dir
 
@@ -25,8 +27,9 @@ params = {
 }
 
 # add forecast data request for tomorrow, if available
-if datetime.datetime.now().time() < datetime.datetime.strptime(query.day_ahead_deadline, '%H:%M').time():
-    print(f'Day ahead prognosis data not available until today {query.day_ahead_deadline}.')
+if datetime.datetime.now().time() < datetime.datetime.strptime(query.configs.general.day_ahead_deadline,
+                                                               '%H:%M').time():
+    print(f'Day ahead prognosis data not available until today {query.configs.general.day_ahead_deadline}.')
 else:
     params[('forecast', 'tomorrow')] = {'start': today, 'end': today + pd.DateOffset(days=1)}
 
@@ -45,13 +48,16 @@ for _key in params:
     end: pd.Timestamp = params[_key]['end']
 
     print(f'Requesting data: {req_type}, {period}.')
-    if req_type == 'forecast':
-        data = query.get_all_day_ahead_data(start, end)
-    elif req_type == 'historical':
-        data = query.get_all_historical_data(start, end)
-    else:
-        print(f'Unknown request type "{req_type}"')
-        continue
+    try:
+        if req_type == 'forecast':
+            data = query.get_all_day_ahead_data(start, end)
+        elif req_type == 'historical':
+            data = query.get_all_historical_data(start, end)
+        else:
+            print(f'Unknown request type "{req_type}"')
+            continue
+    except NoMatchingDataError:
+        print(f'NoMatchingDataError encountered, skipping request...')
 
     # export to csv
     export_path = os.path.join(root, 'data', f'{req_type}_{period}.csv')
