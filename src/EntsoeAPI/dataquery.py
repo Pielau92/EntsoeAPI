@@ -3,7 +3,9 @@ import pandas as pd
 from entsoe import EntsoePandasClient
 from entsoe.mappings import lookup_area, NEIGHBOURS
 from EntsoeAPI.utils import create_empty_hourly_df, PathConfig
-from configs import Configs
+from EntsoeAPI.configs import Configs
+
+
 
 
 class DataQuery:
