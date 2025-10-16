@@ -12,6 +12,7 @@ class General:
     api_key: str  # API security token from ENTSO E
     country_code: str  # unique code of target country - see entsoe.mappings.Area class for complete table
     day_ahead_deadline: str  # deadline for publication of day ahead data
+    years: list[int]    # list of years for the historical data request
 
 
 @dataclass(init=False)
