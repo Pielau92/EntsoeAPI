@@ -57,6 +57,7 @@ for _key in params:
             continue
     except NoMatchingDataError:
         print(f'NoMatchingDataError encountered, skipping request...')
+        continue
 
     # export to csv
     export_path = os.path.join(root, 'data', f'{req_type}_{period}.csv')
