@@ -33,9 +33,8 @@ if datetime.datetime.now().time() < datetime.datetime.strptime(query.configs.gen
 else:
     params[('forecast', 'tomorrow')] = {'start': today, 'end': today + pd.DateOffset(days=1)}
 
-# add historical data requests for past years, since 2022
-years = list(range(2022, datetime.date.today().year + 1))
-for _year in years:
+# add historical data requests for past years
+for _year in query.configs.general.years:
     start = pd.Timestamp(year=_year, month=1, day=1, hour=0, minute=0, second=0, tz=query.tz)
     end = start + pd.DateOffset(years=1)
     params[('historical', str(_year))] = {'start': start, 'end': end}
@@ -58,6 +57,7 @@ for _key in params:
             continue
     except NoMatchingDataError:
         print(f'NoMatchingDataError encountered, skipping request...')
+        continue
 
     # export to csv
     export_path = os.path.join(root, 'data', f'{req_type}_{period}.csv')
