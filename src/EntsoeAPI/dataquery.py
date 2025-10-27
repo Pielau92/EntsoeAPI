@@ -6,35 +6,25 @@ from EntsoeAPI.utils import create_empty_hourly_df, PathConfig
 from EntsoeAPI.configs import Configs
 
 
-
-
 class DataQuery:
     """Class for storing data query configurations."""
 
     def __init__(self, root_dir: str):
-        # self.api_key = str()  # API security token from ENTSO E
-        # self.configs.general.country_code = str()  # unique code of target country - see entsoe.mappings.Area class for complete table
-        # self.day_ahead_deadline = str()  # deadline for publication of day ahead data
-
-        # paths
         self.path = PathConfig(self, root_dir)
-        # self.settings = Settings(self)
-        # self.settings.load_settings()
-        # self.settings.apply_settings()
         self.configs = Configs(self.path.configs)
 
-        self.tz = lookup_area(self.configs.general.country_code).tz  # time zone
-        self.date_today = None  # today's date
-
         self.client = EntsoePandasClient(api_key=self.configs.general.api_key)  # ENTSO E client
-        self.set_date_today()
 
-    def set_date_today(self) -> None:
+        self.tz: str = lookup_area(self.configs.general.country_code).tz  # time zone
+        self.date_today: pd.Timestamp = self.get_date_today()  # today's date
+
+    def get_date_today(self) -> pd.Timestamp:
         """Set today's date."""
 
         date_today = pd.to_datetime('today').normalize()  # datetime: today at midnight
         date_today = pd.Timestamp(date_today, tz=self.tz)  # add timezone information
-        self.date_today = date_today  # set value
+
+        return date_today
 
     def get_all_day_ahead_data(self, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
         """Get all day ahead data for a specified time period.
