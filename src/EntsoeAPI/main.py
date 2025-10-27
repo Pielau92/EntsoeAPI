@@ -64,5 +64,19 @@ for _key in params:
     print(f'Exporting to {export_path}')
     data.to_csv(export_path)
 
+# region GET GENERATION DATA BY ENERGY SOURCE
+
+years = list(range(2016, 2025 + 1))
+generation = {year: query.get_generation_data_by_energy_source(year=year) for year in years}
+
+# Export
+for key, df in generation.items():
+    export_path = os.path.join(root, 'data', f'ENTSOE_generation_{key}.xlsx')
+    df_tz_naive = df.copy().tz_localize(None)
+    df_tz_naive.to_excel(export_path, sheet_name=str(key))
+pass
+
+# endregion GET GENERATION DATA BY ENERGY SOURCE
+
 print('done!')
 pass
