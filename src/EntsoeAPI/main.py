@@ -1,5 +1,6 @@
 import os
 import datetime
+import openpyxl
 
 import pandas as pd
 
@@ -73,10 +74,11 @@ generation = {year:
               for year in years}
 
 # Export
-for key, df in generation.items():
-    export_path = os.path.join(root, 'data', f'ENTSOE_generation_{key}.xlsx')
-    df_tz_naive = df.copy().tz_localize(None)
-    df_tz_naive.to_excel(export_path, sheet_name=str(key))
+export_path = os.path.join(root, 'data', f'ENTSOE_generation_by_type.xlsx')
+with pd.ExcelWriter(export_path, engine='openpyxl') as writer:
+    for key, df in generation.items():
+        df_tz_naive = df.copy().tz_localize(None)
+        df_tz_naive.to_excel(writer, sheet_name=str(key))
 pass
 
 # endregion GET GENERATION DATA BY ENERGY SOURCE
