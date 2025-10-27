@@ -66,8 +66,11 @@ for _key in params:
 
 # region GET GENERATION DATA BY ENERGY SOURCE
 
+remove_leap_day_df = lambda df: df[~((df.index.month == 2) & (df.index.day == 29))]
 years = list(range(2016, 2025 + 1))
-generation = {year: query.get_generation_data_by_energy_source(year=year) for year in years}
+generation = {year:
+                  remove_leap_day_df(query.get_generation_data_by_energy_source(year=year))
+              for year in years}
 
 # Export
 for key, df in generation.items():
