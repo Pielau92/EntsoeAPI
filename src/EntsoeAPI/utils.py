@@ -59,3 +59,27 @@ class PathConfig:
     def configs(self, filename: str = 'configs.ini'):
         """Path to directory."""
         return os.path.join(self.root, filename)
+
+
+def get_empty_df(start: pd.Timestamp, end: pd.Timestamp, freq: str = 'h', columns: list[str] = [],
+                 data=float('nan')) -> pd.DataFrame:
+    """Create DataFrame with datetime indices and
+
+    :param pd.Timestamp start: start of datetime indices
+    :param pd.Timestamp end: end of datetime indices
+    :param str freq: time increment of datetime indices
+    :param list[str] columns: column headers
+    :param data: default data value
+    :return: empty DataFrame
+    """
+
+    # create datatime indices in
+    kwargs = {'index': pd.date_range(start=start, end=end, freq=freq)}
+
+    if columns:
+        kwargs.update({
+            'columns': columns,
+            'data': data
+        })
+
+    return pd.DataFrame(**kwargs)

@@ -1,12 +1,14 @@
 import os
 import datetime
+import openpyxl
 
 import pandas as pd
 
 from entsoe.exceptions import NoMatchingDataError
+from entsoe.mappings import NEIGHBOURS
 
 from EntsoeAPI.dataquery import DataQuery
-from EntsoeAPI.utils import get_root_dir
+from EntsoeAPI.utils import get_root_dir, get_empty_df
 
 root = get_root_dir()
 
@@ -64,5 +66,48 @@ for _key in params:
     print(f'Exporting to {export_path}')
     data.to_csv(export_path)
 
+# region GET GENERATION DATA BY ENERGY SOURCE
+
+remove_leap_day_df = lambda df: df[~((df.index.month == 2) & (df.index.day == 29))]
+years = list(range(2016, 2025 + 1))
+generation = {year:
+                  remove_leap_day_df(query.get_generation_data_by_energy_source(year=year))
+              for year in years}
+
+# Export
+export_path = os.path.join(root, 'data', f'ENTSOE_generation_by_type.xlsx')
+with pd.ExcelWriter(export_path, engine='openpyxl') as writer:
+    for key, df in generation.items():
+        df_tz_naive = df.copy().tz_localize(None)
+        df_tz_naive.to_excel(writer, sheet_name=str(key))
+pass
+
+# endregion GET GENERATION DATA BY ENERGY SOURCE
+
+# region GET ENERGY IMPORT DATA
+
+imports = dict()
+for year in years:
+    start = pd.Timestamp(year=year, month=1, day=1, hour=0, minute=0, second=0, tz=query.tz)
+    end = pd.Timestamp(year=year + 1, month=1, day=1, hour=0, minute=0, second=0, tz=query.tz)
+
+    empty_df = get_empty_df(start=start, end=end, columns=NEIGHBOURS[query.configs.general.country_code])
+
+    empty_df.update(query.client.query_import(
+        country_code=query.configs.general.country_code,
+        start=pd.Timestamp(year=year, month=1, day=1, hour=0, minute=0, second=0, tz=query.tz),
+        end=pd.Timestamp(year=year + 1, month=1, day=1, hour=0, minute=0, second=0, tz=query.tz)
+    ).resample('h').first())
+    imports[year] =empty_df.copy()
+
+# Export
+export_path = os.path.join(root, 'data', f'ENTSOE_imports.xlsx')
+with pd.ExcelWriter(export_path, engine='openpyxl') as writer:
+    for key, df in imports.items():
+        df_tz_naive = df.copy().tz_localize(None)
+        df_tz_naive.to_excel(writer, sheet_name=str(key))
+pass
+
+# endregion GET ENERGY IMPORT DATA
 print('done!')
 pass

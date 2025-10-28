@@ -1,40 +1,31 @@
 import pandas as pd
 
 from entsoe import EntsoePandasClient
-from entsoe.mappings import lookup_area, NEIGHBOURS
-from EntsoeAPI.utils import create_empty_hourly_df, PathConfig
+from entsoe.mappings import lookup_area, NEIGHBOURS, PSRTYPE_MAPPINGS
+from entsoe.exceptions import NoMatchingDataError
+from EntsoeAPI.utils import create_empty_hourly_df, PathConfig, get_empty_df
 from EntsoeAPI.configs import Configs
-
-
 
 
 class DataQuery:
     """Class for storing data query configurations."""
 
     def __init__(self, root_dir: str):
-        # self.api_key = str()  # API security token from ENTSO E
-        # self.configs.general.country_code = str()  # unique code of target country - see entsoe.mappings.Area class for complete table
-        # self.day_ahead_deadline = str()  # deadline for publication of day ahead data
-
-        # paths
         self.path = PathConfig(self, root_dir)
-        # self.settings = Settings(self)
-        # self.settings.load_settings()
-        # self.settings.apply_settings()
         self.configs = Configs(self.path.configs)
 
-        self.tz = lookup_area(self.configs.general.country_code).tz  # time zone
-        self.date_today = None  # today's date
-
         self.client = EntsoePandasClient(api_key=self.configs.general.api_key)  # ENTSO E client
-        self.set_date_today()
 
-    def set_date_today(self) -> None:
+        self.tz: str = lookup_area(self.configs.general.country_code).tz  # time zone
+        self.date_today: pd.Timestamp = self.get_date_today()  # today's date
+
+    def get_date_today(self) -> pd.Timestamp:
         """Set today's date."""
 
         date_today = pd.to_datetime('today').normalize()  # datetime: today at midnight
         date_today = pd.Timestamp(date_today, tz=self.tz)  # add timezone information
-        self.date_today = date_today  # set value
+
+        return date_today
 
     def get_all_day_ahead_data(self, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
         """Get all day ahead data for a specified time period.
@@ -131,3 +122,47 @@ class DataQuery:
             df[key] = data[key]
 
         return df
+
+    def get_generation_data_by_energy_source(self, year: int) -> pd.DataFrame:
+        """Get energy generation data for each energy source for a given year.
+
+        :param year:
+        :return: generation data by energy source
+        """
+
+        start = pd.Timestamp(year=year, month=1, day=1, hour=0, minute=0, second=0, tz=self.tz)
+        end = start + pd.DateOffset(years=1)
+
+        df_generation = get_empty_df(
+            start=start,
+            end=end,
+            columns=[item for _, item in PSRTYPE_MAPPINGS.items()]
+        )
+
+        for psr_type, energy_source in PSRTYPE_MAPPINGS.items():
+            success = False
+            tries = 2
+            while not success:
+                try:
+                    print(f'Requesting generation data for {energy_source}')
+                    response = self.client.query_generation(
+                        country_code=self.configs.general.country_code, start=start, end=end, psr_type=psr_type)
+                    data = pd.DataFrame(response[(energy_source, 'Actual Aggregated')])
+                    data.columns = [energy_source]
+                    print('Data found')
+                    df_generation.update(data)
+                    success = True
+                except NoMatchingDataError:
+                    print('No data available')
+                    success = True
+                    continue
+                except:
+                    print(f'Unknown error occurred for generation data for {energy_source}')
+                    if tries > 0:
+                        print(f'Trying {tries} more time{['', 's'][tries > 1]}')
+                        tries -= 1
+                        continue
+                    else:
+                        break
+
+        return df_generation
