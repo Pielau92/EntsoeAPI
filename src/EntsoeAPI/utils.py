@@ -48,19 +48,6 @@ def create_empty_hourly_df(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFra
     return pd.DataFrame(index=index)
 
 
-class PathConfig:
-    """Class for storing path information."""
-
-    def __init__(self, data_query: any, root_dir: str):
-        self.data_query = data_query
-        self.root = root_dir
-
-    @property
-    def configs(self, filename: str = 'configs.ini'):
-        """Path to directory."""
-        return os.path.join(self.root, filename)
-
-
 def get_empty_df(start: pd.Timestamp, end: pd.Timestamp, freq: str = 'h', columns: list[str] = [],
                  data=float('nan')) -> pd.DataFrame:
     """Create DataFrame with datetime indices and

@@ -3,7 +3,8 @@ import pandas as pd
 from entsoe import EntsoePandasClient
 from entsoe.mappings import lookup_area, NEIGHBOURS, PSRTYPE_MAPPINGS
 from entsoe.exceptions import NoMatchingDataError
-from EntsoeAPI.utils import create_empty_hourly_df, PathConfig, get_empty_df
+from EntsoeAPI.utils import create_empty_hourly_df, get_empty_df
+from EntsoeAPI.paths import PathConfig
 from EntsoeAPI.configs import Configs
 
 
