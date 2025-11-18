@@ -68,3 +68,14 @@ def get_empty_df(start: pd.Timestamp, end: pd.Timestamp, freq: str = 'h', column
         })
 
     return pd.DataFrame(**kwargs)
+
+
+def get_date_today(timezone: str = None) -> pd.Timestamp:
+    """Return today's date."""
+
+    date_today = pd.to_datetime('today').normalize()  # today at start of day (midnight)
+
+    if timezone:  # add timezone information
+        date_today = pd.Timestamp(date_today, tz=timezone)
+
+    return date_today

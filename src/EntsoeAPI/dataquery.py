@@ -3,7 +3,7 @@ import pandas as pd
 from entsoe import EntsoePandasClient
 from entsoe.mappings import lookup_area, NEIGHBOURS, PSRTYPE_MAPPINGS
 from entsoe.exceptions import NoMatchingDataError
-from EntsoeAPI.utils import create_empty_hourly_df, get_empty_df
+from EntsoeAPI.utils import create_empty_hourly_df, get_empty_df, get_date_today
 from EntsoeAPI.paths import PathConfig
 from EntsoeAPI.configs import Configs
 
@@ -18,15 +18,7 @@ class DataQuery:
         self.client = EntsoePandasClient(api_key=self.configs.general.api_key)  # ENTSO E client
 
         self.tz: str = lookup_area(self.configs.general.country_code).tz  # time zone
-        self.date_today: pd.Timestamp = self.get_date_today()  # today's date
-
-    def get_date_today(self) -> pd.Timestamp:
-        """Set today's date."""
-
-        date_today = pd.to_datetime('today').normalize()  # datetime: today at midnight
-        date_today = pd.Timestamp(date_today, tz=self.tz)  # add timezone information
-
-        return date_today
+        self.date_today: pd.Timestamp = get_date_today(self.tz)  # today's date
 
     def get_all_day_ahead_data(self, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
         """Get all day ahead data for a specified time period.
