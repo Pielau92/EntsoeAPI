@@ -2,8 +2,6 @@ import os, sys
 
 import pandas as pd
 
-from configparser import ConfigParser
-
 
 def get_pardir(path: str, levels: int = 1) -> str:
     """Get parent directory of given path.
@@ -60,7 +58,7 @@ def get_empty_df(start: pd.Timestamp, end: pd.Timestamp, freq: str = 'h', column
     :return: empty DataFrame
     """
 
-    # create datatime indices in
+    # create datatime indices
     kwargs = {'index': pd.date_range(start=start, end=end, freq=freq)}
 
     if columns:
