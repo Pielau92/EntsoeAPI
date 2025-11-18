@@ -4,7 +4,7 @@ from entsoe import EntsoePandasClient
 from entsoe.mappings import lookup_area, NEIGHBOURS, PSRTYPE_MAPPINGS
 from entsoe.exceptions import NoMatchingDataError
 from EntsoeAPI.utils import create_empty_hourly_df, get_empty_df, get_date_today
-from EntsoeAPI.paths import PathConfig
+from EntsoeAPI.paths import Paths
 from EntsoeAPI.configs import Configs
 
 
@@ -12,7 +12,7 @@ class DataQuery:
     """Class for storing data query configurations."""
 
     def __init__(self, root_dir: str):
-        self.path = PathConfig(self, root_dir)
+        self.path = Paths(root_dir)
         self.configs = Configs(self.path.configs)
 
         self.client = EntsoePandasClient(api_key=self.configs.general.api_key)  # ENTSO E client

@@ -1,13 +1,11 @@
 import os
 
-from EntsoeAPI.dataquery import DataQuery
+from dataclasses import dataclass
 
-class PathConfig:
-    """Class for storing path information."""
 
-    def __init__(self, data_query: DataQuery, root_dir: str):
-        self.data_query = data_query
-        self.root = root_dir
+@dataclass
+class Paths:
+    root: str  # path to root directory
 
     @property
     def configs(self, filename: str = 'configs.ini'):
