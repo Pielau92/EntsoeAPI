@@ -1,3 +1,4 @@
+import os
 import openpyxl
 
 import pandas as pd
@@ -27,6 +28,14 @@ def export_data(data: pd.DataFrame, path: str, format: str) -> None:
     print(f'Exporting to {path}')
     exporter = exporters[format]
     exporter(data, path)
+
+def export_batch(datasets:dict[str,pd.DataFrame], dirpath:str, format:str)->None:
+    for key, data in datasets.items():
+        if data is not None:
+            export_path = os.path.join(dirpath, f'{key}.{format}')
+            export_data(data=data, path=export_path, format=format)
+        else:
+            print(f'No data for {key}')
 
 
 def export_xlsx_multisheet(data: dict[str, pd.DataFrame], path: str) -> None:
