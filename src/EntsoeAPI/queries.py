@@ -176,6 +176,19 @@ queries: dict[str, Query] = {
 }
 
 
-def get_query(data_query: DataQuery, start: pd.Timestamp, end: pd.Timestamp, query_name: str) -> pd.DataFrame:
+def get_query(data_query: DataQuery, tp: str | int, query_name: str) -> pd.DataFrame | None:
+    timeperiod = TimePeriod(data_query.date_today)
+
+    if isinstance(tp, str):
+        start, end = timeperiod.__getattribute__(tp)
+    elif isinstance(tp, int):
+        start, end = timeperiod.year(tp)
+    else:
+        print(f'Invalid time period {tp}.')
+        return None
+
     query = queries[query_name]
-    return query(data_query, start, end)
+    try:
+        return query(data_query, start, end)
+    except NoMatchingDataError:
+        print(f'NoMatchingDataError encountered, skipping request...')
