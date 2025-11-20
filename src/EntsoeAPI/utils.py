@@ -79,3 +79,7 @@ def get_date_today(timezone: str = None) -> pd.Timestamp:
         date_today = pd.Timestamp(date_today, tz=timezone)
 
     return date_today
+
+
+def remove_leap_day_df(df: pd.DataFrame) -> pd.DataFrame:
+    return df[~((df.index.month == 2) & (df.index.day == 29))]
