@@ -156,10 +156,23 @@ def get_generation_data_by_energy_source(dataquery: DataQuery, start: pd.Timesta
     return df_generation
 
 
+def get_energy_imports(dataquery: DataQuery, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    empty_df = get_empty_df(start=start, end=end, columns=NEIGHBOURS[dataquery.configs.general.country_code])
+
+    empty_df.update(dataquery.client.query_import(
+        country_code=dataquery.configs.general.country_code,
+        start=start,
+        end=end
+    ).resample('h').first())
+
+    return empty_df
+
+
 queries: dict[str, Query] = {
     "forecast": get_all_day_ahead_data,
     "historical": get_all_historical_data,
     "generation_by_source": get_generation_data_by_energy_source,
+    "imports": get_energy_imports,
 }
 
 
