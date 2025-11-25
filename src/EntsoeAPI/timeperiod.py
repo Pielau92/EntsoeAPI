@@ -12,21 +12,21 @@ class TimePeriod:
     def yesterday(self) -> tuple[pd.Timestamp, pd.Timestamp]:
         start = self.date - pd.DateOffset(days=1)
         end = self.date
-        return (start, end)
+        return start, end
 
     @property
     def today(self) -> tuple[pd.Timestamp, pd.Timestamp]:
         start = self.date
         end = self.date + pd.DateOffset(days=1)
-        return (start, end)
+        return start, end
 
     @property
-    def tommorow(self) -> tuple[pd.Timestamp, pd.Timestamp]:
+    def tomorrow(self) -> tuple[pd.Timestamp, pd.Timestamp]:
         start = self.date + pd.DateOffset(days=1)
         end = self.date + pd.DateOffset(days=2)
-        return (start, end)
+        return start, end
 
     def year(self, year: int) -> tuple[pd.Timestamp, pd.Timestamp]:
         start = pd.Timestamp(year=year, month=1, day=1, hour=0, minute=0, second=0, tz=self.date.tz)
         end = start + pd.DateOffset(years=1)
-        return (start, end)
+        return start, end
