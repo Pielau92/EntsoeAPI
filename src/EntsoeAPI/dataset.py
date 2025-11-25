@@ -1,17 +1,21 @@
 import os
 
 import pandas as pd
+from entsoe import EntsoePandasClient
 
-from EntsoeAPI.utils import create_empty_hourly_df
+from EntsoeAPI.configs import Configs
+from EntsoeAPI.utils import create_empty_hourly_df, get_root_dir
 from EntsoeAPI.queries import get_query
 from EntsoeAPI.exporters import export_data, export_xlsx_multisheet
-from EntsoeAPI.session import Session
 from EntsoeAPI.timeperiod import TimePeriod
 
 
 class Dataset:
-    def __init__(self, query: Session, queries: list[str], timeperiods: list[str | int], export_formats: list[str]):
-        self.query = query  # todo ersetzen, durch config?
+    def __init__(self, client: EntsoePandasClient, configs: Configs, name: str, queries: list[str],
+                 timeperiods: list[str | int], export_formats: list[str]):
+        self.client = client
+        self.configs = configs
+        self.name = name
         self.queries = queries
         self.timeperiods = timeperiods
         self.export_formats = export_formats
@@ -23,11 +27,12 @@ class Dataset:
         self.data = {}
         for timeperiod in self.timeperiods:
             for query in self.queries:
-                self.data[(query, timeperiod)] = get_query(data_query=self.query, tp=timeperiod, query_name=query)
+                self.data[(query, timeperiod)] = get_query(client=self.client, configs=self.configs, tp=timeperiod,
+                                                           query_name=query)
 
         # self.data = {
         #     (query, timeperiod):  # key
-        #         get_query(data_query=self.query, tp=timeperiod, query_name=query)  # value
+        #         get_query(data_query=self.session, tp=timeperiod, query_name=query)  # value
         #     for query in self.queries
         #     for timeperiod in self.timeperiods
         # }
@@ -36,7 +41,7 @@ class Dataset:
 
         pages = {}
         for tp in self.timeperiods:
-            timeperiod = TimePeriod(self.query.date_today)
+            timeperiod = TimePeriod(self.configs.runtime.date_today)
             if isinstance(tp, str):
                 start, end = timeperiod.__getattribute__(tp)
             elif isinstance(tp, int):
@@ -65,14 +70,11 @@ class Dataset:
 
 
 if __name__ == '__main__':
-    from EntsoeAPI.utils import get_root_dir
+    from EntsoeAPI.session import Session
 
-    dataset = Dataset(
-        query=Session(root_dir=get_root_dir()),
-        queries=['imports', 'imports'],
-        timeperiods=['yesterday', 2025],
-        export_formats=['csv', 'xlsx'],
-    )
+    session = Session(root_dir=get_root_dir())
+    session.load_dataset_configs()
 
-    dataset.request_data()
-    dataset.export()
+    for dataset in session.datasets:
+        dataset.request_data()
+        dataset.export()
