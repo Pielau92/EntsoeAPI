@@ -3,6 +3,7 @@ import pandas as pd
 from entsoe.mappings import NEIGHBOURS, PSRTYPE_MAPPINGS
 from entsoe.exceptions import NoMatchingDataError
 from EntsoeAPI.utils import create_empty_hourly_df, get_empty_df
+from EntsoeAPI.timeperiod import TimePeriod
 
 import pandas as pd
 
