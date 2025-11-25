@@ -19,6 +19,12 @@ class Session:
 
         self.tz: str = lookup_area(self.configs.general.country_code).tz  # time zone
         self.date_today: pd.Timestamp = get_date_today(self.tz)  # today's date
+        # set runtime configurations
+        timezone = lookup_area(self.configs.general.country_code).tz
+        self.configs.runtime = Runtime(
+            tz=timezone,
+            date_today=get_date_today(timezone)  # today's date including time zone information
+        )
 
 
 if __name__ == '__main__':
