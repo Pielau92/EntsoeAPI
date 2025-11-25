@@ -2,8 +2,6 @@ import os, sys
 
 import pandas as pd
 
-from configparser import ConfigParser
-
 
 def get_pardir(path: str, levels: int = 1) -> str:
     """Get parent directory of given path.
@@ -48,19 +46,6 @@ def create_empty_hourly_df(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFra
     return pd.DataFrame(index=index)
 
 
-class PathConfig:
-    """Class for storing path information."""
-
-    def __init__(self, data_query: any, root_dir: str):
-        self.data_query = data_query
-        self.root = root_dir
-
-    @property
-    def configs(self, filename: str = 'configs.ini'):
-        """Path to directory."""
-        return os.path.join(self.root, filename)
-
-
 def get_empty_df(start: pd.Timestamp, end: pd.Timestamp, freq: str = 'h', columns: list[str] = [],
                  data=float('nan')) -> pd.DataFrame:
     """Create DataFrame with datetime indices and
@@ -73,7 +58,7 @@ def get_empty_df(start: pd.Timestamp, end: pd.Timestamp, freq: str = 'h', column
     :return: empty DataFrame
     """
 
-    # create datatime indices in
+    # create datatime indices
     kwargs = {'index': pd.date_range(start=start, end=end, freq=freq)}
 
     if columns:
@@ -83,3 +68,42 @@ def get_empty_df(start: pd.Timestamp, end: pd.Timestamp, freq: str = 'h', column
         })
 
     return pd.DataFrame(**kwargs)
+
+
+def get_date_today(timezone: str = None) -> pd.Timestamp:
+    """Return today's date."""
+
+    date_today = pd.to_datetime('today').normalize()  # today at start of day (midnight)
+
+    if timezone:  # add timezone information
+        date_today = pd.Timestamp(date_today, tz=timezone)
+
+    return date_today
+
+
+def remove_leap_day_df(df: pd.DataFrame) -> pd.DataFrame:
+    return df[~((df.index.month == 2) & (df.index.day == 29))]
+
+
+def parse_optional_list(raw: str) -> list[str | int]:
+    """Parsing function for a raw string representing a single value or a comma seperated list of strings or integers.
+
+    :param str raw: raw string
+    :return: list of values (even if it is a single value)
+    """
+
+    if not ',' in raw:  # if no comma, it is a single value...
+        items = [raw]
+    else:  # ...else, it is a list of values
+        items = raw.split(',')  # create list
+
+    parsed_items = []
+    for item in items:
+        item = item.strip()  # remove whitespaces
+
+        try:
+            parsed_items.append(int(item))  # convert to int, if possible...
+        except ValueError:
+            parsed_items.append(item)  # ...if not, it is a string
+
+    return parsed_items
