@@ -83,3 +83,27 @@ def get_date_today(timezone: str = None) -> pd.Timestamp:
 
 def remove_leap_day_df(df: pd.DataFrame) -> pd.DataFrame:
     return df[~((df.index.month == 2) & (df.index.day == 29))]
+
+
+def parse_optional_list(raw: str) -> list[str | int]:
+    """Parsing function for a raw string representing a single value or a comma seperated list of strings or integers.
+
+    :param str raw: raw string
+    :return: list of values (even if it is a single value)
+    """
+
+    if not ',' in raw:  # if no comma, it is a single value...
+        items = [raw]
+    else:  # ...else, it is a list of values
+        items = raw.split(',')  # create list
+
+    parsed_items = []
+    for item in items:
+        item = item.strip()  # remove whitespaces
+
+        try:
+            parsed_items.append(int(item))  # convert to int, if possible...
+        except ValueError:
+            parsed_items.append(item)  # ...if not, it is a string
+
+    return parsed_items
