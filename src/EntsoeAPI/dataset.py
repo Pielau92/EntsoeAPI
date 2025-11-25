@@ -5,12 +5,12 @@ import pandas as pd
 from EntsoeAPI.utils import create_empty_hourly_df
 from EntsoeAPI.queries import get_query
 from EntsoeAPI.exporters import export_data, export_xlsx_multisheet
-from EntsoeAPI.dataquery import DataQuery
+from EntsoeAPI.session import Session
 from EntsoeAPI.timeperiod import TimePeriod
 
 
 class Dataset:
-    def __init__(self, query: DataQuery, queries: list[str], timeperiods: list[str | int], export_formats: list[str]):
+    def __init__(self, query: Session, queries: list[str], timeperiods: list[str | int], export_formats: list[str]):
         self.query = query  # todo ersetzen, durch config?
         self.queries = queries
         self.timeperiods = timeperiods
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     from EntsoeAPI.utils import get_root_dir
 
     dataset = Dataset(
-        query=DataQuery(root_dir=get_root_dir()),
+        query=Session(root_dir=get_root_dir()),
         queries=['imports', 'imports'],
         timeperiods=['yesterday', 2025],
         export_formats=['csv', 'xlsx'],

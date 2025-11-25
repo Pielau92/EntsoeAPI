@@ -8,12 +8,12 @@ from EntsoeAPI.timeperiod import TimePeriod
 import pandas as pd
 
 from typing import Callable
-from EntsoeAPI.dataquery import DataQuery
+from EntsoeAPI.session import Session
 
-type Query = Callable[[DataQuery, pd.Timestamp, pd.Timestamp], pd.DataFrame]
+type Query = Callable[[Session, pd.Timestamp, pd.Timestamp], pd.DataFrame]
 
 
-def get_all_day_ahead_data(dataquery: DataQuery, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+def get_all_day_ahead_data(dataquery: Session, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """Get all day ahead data for a specified time period.
 
     The time period can be in the past or future, depending on the dataset.
@@ -70,7 +70,7 @@ def get_all_day_ahead_data(dataquery: DataQuery, start: pd.Timestamp, end: pd.Ti
     return df
 
 
-def get_all_historical_data(dataquery: DataQuery, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+def get_all_historical_data(dataquery: Session, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """Get all historic data for a specified time period.
 
     :param dataquery: Dataquery object
@@ -113,7 +113,7 @@ def get_all_historical_data(dataquery: DataQuery, start: pd.Timestamp, end: pd.T
     return df
 
 
-def get_generation_data_by_energy_source(dataquery: DataQuery, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+def get_generation_data_by_energy_source(dataquery: Session, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """Get energy generation data for each energy source.
     
     :param dataquery: Dataquery object 
@@ -157,7 +157,7 @@ def get_generation_data_by_energy_source(dataquery: DataQuery, start: pd.Timesta
     return df_generation
 
 
-def get_energy_imports(dataquery: DataQuery, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+def get_energy_imports(dataquery: Session, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     empty_df = get_empty_df(start=start, end=end, columns=NEIGHBOURS[dataquery.configs.general.country_code])
 
     empty_df.update(dataquery.client.query_import(
@@ -177,7 +177,7 @@ queries: dict[str, Query] = {
 }
 
 
-def get_query(data_query: DataQuery, tp: str | int, query_name: str) -> pd.DataFrame | None:
+def get_query(data_query: Session, tp: str | int, query_name: str) -> pd.DataFrame | None:
     timeperiod = TimePeriod(data_query.date_today)
 
     if isinstance(tp, str):

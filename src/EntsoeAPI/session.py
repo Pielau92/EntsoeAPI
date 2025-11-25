@@ -8,7 +8,7 @@ from EntsoeAPI.paths import Paths
 from EntsoeAPI.configs import Configs
 
 
-class DataQuery:
+class Session:
     """Class for storing data query configurations."""
 
     def __init__(self, root_dir: str):
@@ -19,4 +19,10 @@ class DataQuery:
 
         self.tz: str = lookup_area(self.configs.general.country_code).tz  # time zone
         self.date_today: pd.Timestamp = get_date_today(self.tz)  # today's date
-    
+
+
+if __name__ == '__main__':
+    from EntsoeAPI.utils import get_root_dir
+
+    session = Session(root_dir=get_root_dir())
+    pass
