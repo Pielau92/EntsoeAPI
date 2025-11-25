@@ -1,3 +1,5 @@
+import pandas as pd
+
 from dataclasses import dataclass
 
 from simple_config_manager.configs import _Configs
@@ -12,9 +14,16 @@ class General:
     api_key: str  # API security token from ENTSO E
     country_code: str  # unique code of target country - see entsoe.mappings.Area class for complete table
     day_ahead_deadline: str  # deadline for publication of day ahead data
-    years: list[int]  # list of years for the historical data request
+
+
+@dataclass
+class Runtime:
+    """Configurations set at runtime."""
+    tz: str
+    date_today: pd.Timestamp
 
 
 @dataclass(init=False)
 class Configs(_Configs):
     general: General
+    runtime: Runtime = None
