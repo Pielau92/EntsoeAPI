@@ -74,6 +74,11 @@ def crossborder_exchange(
     return pd.DataFrame(data)
 
 
+def imports(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    return client.query_import(country_code=configs.general.country_code, start=start, end=end).resample('h').first()
+
+
 def get_all_day_ahead_data(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """Get all day ahead data for a specified time period."""
@@ -168,19 +173,6 @@ def get_generation_data_by_energy_source(
     return df_generation
 
 
-def get_energy_imports(
-        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    empty_df = get_empty_df(start=start, end=end, columns=NEIGHBOURS[configs.general.country_code])
-
-    empty_df.update(client.query_import(
-        country_code=configs.general.country_code,
-        start=start,
-        end=end
-    ).resample('h').first())
-
-    return empty_df
-
-
 # basic queries
 queries: dict[str, Query] = {
     'day_ahead_prices': day_ahead_prices,
@@ -190,6 +182,7 @@ queries: dict[str, Query] = {
     'load': load,
     'scheduled_exchanges': scheduled_exchanges,
     'crossborder_exchange': crossborder_exchange,
+    'imports': imports,
 }
 
 # complex queries (consisting of multiple simple queries)
@@ -197,7 +190,6 @@ queries.update({
     "forecast": get_all_day_ahead_data,
     "historical": get_all_historical_data,
     "generation_by_source": get_generation_data_by_energy_source,
-    "imports": get_energy_imports,
 })
 
 
