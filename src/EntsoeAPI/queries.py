@@ -32,8 +32,10 @@ def wind_and_solar_generation(client: EntsoePandasClient, configs: Configs, star
 
 
 def load_forecast(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    return client.query_load_and_forecast(configs.general.country_code, start=start, end=end)
+    return client.query_load_forecast(configs.general.country_code, start=start, end=end)
 
+def load(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    return client.query_load(configs.general.country_code, start=start, end=end)
 
 def scheduled_exchanges(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
@@ -56,7 +58,7 @@ def get_all_day_ahead_data(client: EntsoePandasClient, configs: Configs, start: 
     """Get all day ahead data for a specified time period."""
 
     # combine multiple base queries
-    query_list = ['day_ahead_prices', 'wind_and_solar_generation', 'load_forecast', 'scheduled_exchanges']
+    query_list = ['day_ahead_prices', 'wind_and_solar_generation', 'load', 'scheduled_exchanges']
 
     responses = {query_name: get_query(client, configs, start, end, query_name) for query_name in query_list}
 
@@ -67,7 +69,7 @@ def get_all_day_ahead_data(client: EntsoePandasClient, configs: Configs, start: 
     df['energy_prices [EUR/MWh]'] = responses['day_ahead_prices']
     df['solar_generation [MW]'] = responses['wind_and_solar_generation']['Solar']
     df['wind_onshore_generation [MW]'] = responses['wind_and_solar_generation']['Wind Onshore']
-    df['total_load [MW]'] = responses['load_forecast']['Forecasted Load']
+    df['total_load [MW]'] = responses['load']
     for neighbour in NEIGHBOURS[configs.general.country_code]:
         df[f'scheduled_exchange_{neighbour} [MW]'] = responses['scheduled_exchanges'][neighbour]
 
@@ -168,7 +170,7 @@ def get_energy_imports(client: EntsoePandasClient, configs: Configs, start: pd.T
 queries: dict[str, Query] = {
     'day_ahead_prices': day_ahead_prices,
     'wind_and_solar_generation': wind_and_solar_generation,
-    'load_forecast': load_forecast,
+    'load': load,
     'scheduled_exchanges': scheduled_exchanges,
 }
 
