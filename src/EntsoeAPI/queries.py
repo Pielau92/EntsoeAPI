@@ -20,15 +20,14 @@ type Query = Callable[[EntsoePandasClient, Configs, pd.Timestamp, pd.Timestamp],
 """
 
 
-def day_ahead_prices(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
-                     end: pd.Timestamp) -> pd.DataFrame:
+def day_ahead_prices(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     return client.query_day_ahead_prices(country_code=configs.general.country_code, start=start, end=end)
 
 
 def wind_and_solar_generation_forecast(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    return client.query_wind_and_solar_forecast(
-        configs.general.country_code, start=start, end=end, psr_type=None)
+    return client.query_wind_and_solar_forecast(configs.general.country_code, start=start, end=end, psr_type=None)
 
 
 def generation(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
@@ -38,8 +37,10 @@ def generation(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp
 def load_forecast(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     return client.query_load_forecast(configs.general.country_code, start=start, end=end)
 
+
 def load(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     return client.query_load(configs.general.country_code, start=start, end=end)
+
 
 def scheduled_exchanges(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
@@ -59,7 +60,6 @@ def scheduled_exchanges(
 
 def crossborder_exchange(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-
     data = {
         neighbour:  # key
             client.query_crossborder_flows(  # response as value
@@ -74,12 +74,17 @@ def crossborder_exchange(
     return pd.DataFrame(data)
 
 
-def get_all_day_ahead_data(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
-                           end: pd.Timestamp) -> pd.DataFrame:
+def get_all_day_ahead_data(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """Get all day ahead data for a specified time period."""
 
     # combine multiple base queries
-    query_list = ['day_ahead_prices', 'wind_and_solar_generation', 'load', 'scheduled_exchanges']
+    query_list = [
+        'day_ahead_prices',
+        'wind_and_solar_generation',
+        'load',
+        'scheduled_exchanges'
+    ]
 
     responses = {query_name: get_query(client, configs, start, end, query_name) for query_name in query_list}
 
@@ -97,8 +102,8 @@ def get_all_day_ahead_data(client: EntsoePandasClient, configs: Configs, start: 
     return df
 
 
-def get_all_historical_data(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
-                            end: pd.Timestamp) -> pd.DataFrame:
+def get_all_historical_data(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """Get all historic data for a specified time period."""
 
     # combine multiple base queries
@@ -114,8 +119,6 @@ def get_all_historical_data(client: EntsoePandasClient, configs: Configs, start:
     # save data as DataFrame
     # assumes datetimes from df automatically (if data has >1 value per hour, only the first value is saved)
     df = create_empty_hourly_df(start, end)
-    for key in data:
-        df[key] = data[key]
 
     df['total_load [MW]'] = responses['load']
     df['solar_generation [MW]'] = responses['generation'][('Solar', 'Actual Aggregated')]
@@ -126,8 +129,8 @@ def get_all_historical_data(client: EntsoePandasClient, configs: Configs, start:
     return df
 
 
-def get_generation_data_by_energy_source(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
-                                         end: pd.Timestamp) -> pd.DataFrame:
+def get_generation_data_by_energy_source(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """Get energy generation data for each energy source."""
 
     df_generation = get_empty_df(
@@ -165,8 +168,8 @@ def get_generation_data_by_energy_source(client: EntsoePandasClient, configs: Co
     return df_generation
 
 
-def get_energy_imports(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
-                       end: pd.Timestamp) -> pd.DataFrame:
+def get_energy_imports(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     empty_df = get_empty_df(start=start, end=end, columns=NEIGHBOURS[configs.general.country_code])
 
     empty_df.update(client.query_import(
@@ -178,7 +181,7 @@ def get_energy_imports(client: EntsoePandasClient, configs: Configs, start: pd.T
     return empty_df
 
 
-# simple queries
+# basic queries
 queries: dict[str, Query] = {
     'day_ahead_prices': day_ahead_prices,
     'wind_and_solar_generation_forecast': wind_and_solar_generation_forecast,
