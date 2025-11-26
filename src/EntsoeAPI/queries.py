@@ -31,6 +31,10 @@ def wind_and_solar_generation_forecast(
         configs.general.country_code, start=start, end=end, psr_type=None)
 
 
+def generation(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    return client.query_generation(configs.general.country_code, start=start, end=end, psr_type=None)
+
+
 def load_forecast(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     return client.query_load_forecast(configs.general.country_code, start=start, end=end)
 
@@ -47,6 +51,23 @@ def scheduled_exchanges(
                 start=start,
                 end=end,
                 dayahead=False, )
+        for neighbour in NEIGHBOURS[configs.general.country_code]  # for each neighbour country
+    }
+
+    return pd.DataFrame(data)
+
+
+def crossborder_exchange(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+
+    data = {
+        neighbour:  # key
+            client.query_crossborder_flows(  # response as value
+                country_code_from=configs.general.country_code,
+                country_code_to=neighbour,
+                end=end,
+                start=start,
+                lookup_bzones=True)
         for neighbour in NEIGHBOURS[configs.general.country_code]  # for each neighbour country
     }
 
@@ -80,37 +101,28 @@ def get_all_historical_data(client: EntsoePandasClient, configs: Configs, start:
                             end: pd.Timestamp) -> pd.DataFrame:
     """Get all historic data for a specified time period."""
 
-    data = dict()
+    # combine multiple base queries
+    query_list = [
+        'load',
+        'generation',
+        'crossborder_flows',
+        'day_ahead_prices'
+    ]
 
-    # total load [MW]
-    df_response = client.query_load(configs.general.country_code, start=start, end=end)
-    data['total_load [MW]'] = df_response['Actual Load']
-
-    # wind onshore and solar generation [MW]
-    df_response = client.query_generation(configs.general.country_code, start=start, end=end,
-                                          psr_type=None)
-    data['solar_generation [MW]'] = df_response[('Solar', 'Actual Aggregated')]
-    data['wind_onshore_generation [MW]'] = df_response[('Wind Onshore', 'Actual Aggregated')]
-
-    # cross-border physical flow (scheduled commercial exchange with neighbors) [MW]
-    for neighbour in NEIGHBOURS[configs.general.country_code]:
-        data[f'scheduled_exchange_{neighbour} [MW]'] = client.query_crossborder_flows(
-            country_code_from=configs.general.country_code,
-            country_code_to=neighbour,
-            end=end,
-            start=start,
-            lookup_bzones=True)
-
-    # day ahead price data [€/MWh]
-    df_response = client.query_day_ahead_prices(configs.general.country_code, start=start, end=end,
-                                                resolution='15min')
-    data['day_ahead [€/MWh]'] = df_response
+    responses = {query_name: get_query(client, configs, start, end, query_name) for query_name in query_list}
 
     # save data as DataFrame
+    # assumes datetimes from df automatically (if data has >1 value per hour, only the first value is saved)
     df = create_empty_hourly_df(start, end)
     for key in data:
         df[key] = data[key]
 
+    df['total_load [MW]'] = responses['load']
+    df['solar_generation [MW]'] = responses['generation'][('Solar', 'Actual Aggregated')]
+    df['wind_onshore_generation [MW]'] = responses['generation'][('Wind Onshore', 'Actual Aggregated')]
+    df['day_ahead [€/MWh]'] = responses['day_ahead_prices']
+    for neighbour in NEIGHBOURS[configs.general.country_code]:
+        df[f'scheduled_exchange_{neighbour} [MW]'] = responses['crossborder_flows'][neighbour]
     return df
 
 
@@ -169,9 +181,12 @@ def get_energy_imports(client: EntsoePandasClient, configs: Configs, start: pd.T
 # simple queries
 queries: dict[str, Query] = {
     'day_ahead_prices': day_ahead_prices,
-    'wind_and_solar_generation': wind_and_solar_generation,
+    'wind_and_solar_generation_forecast': wind_and_solar_generation_forecast,
+    'generation': generation,
+    'load_forecast': load_forecast,
     'load': load,
     'scheduled_exchanges': scheduled_exchanges,
+    'crossborder_exchange': crossborder_exchange,
 }
 
 # complex queries (consisting of multiple simple queries)
