@@ -25,8 +25,8 @@ def day_ahead_prices(client: EntsoePandasClient, configs: Configs, start: pd.Tim
     return client.query_day_ahead_prices(country_code=configs.general.country_code, start=start, end=end)
 
 
-def wind_and_solar_generation(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
-                              end: pd.Timestamp) -> pd.DataFrame:
+def wind_and_solar_generation_forecast(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     return client.query_wind_and_solar_forecast(
         configs.general.country_code, start=start, end=end, psr_type=None)
 
