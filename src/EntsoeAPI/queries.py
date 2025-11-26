@@ -11,77 +11,72 @@ from EntsoeAPI.configs import Configs
 from EntsoeAPI.timeperiod import TimePeriod
 
 type Query = Callable[[EntsoePandasClient, Configs, pd.Timestamp, pd.Timestamp], pd.DataFrame]
+"""
+:param EntsoePandasClient client: client from entsoe package
+:param Configs configs: configurations
+:param pd.Timestamp start: start datetime of requested time period
+:param pd.Timestamp end: end datetime of requested time period
+:return: DataFrame with requested data
+"""
+
+
+def day_ahead_prices(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
+                     end: pd.Timestamp) -> pd.DataFrame:
+    return client.query_day_ahead_prices(country_code=configs.general.country_code, start=start, end=end)
+
+
+def wind_and_solar_generation(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
+                              end: pd.Timestamp) -> pd.DataFrame:
+    return client.query_wind_and_solar_forecast(
+        configs.general.country_code, start=start, end=end, psr_type=None)
+
+
+def load_forecast(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    return client.query_load_and_forecast(configs.general.country_code, start=start, end=end)
+
+
+def scheduled_exchanges(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    data = {
+        neighbour:  # key
+            client.query_scheduled_exchanges(  # response as value
+                country_code_from=configs.general.country_code,
+                country_code_to=neighbour,
+                start=start,
+                end=end,
+                dayahead=False, )
+        for neighbour in NEIGHBOURS[configs.general.country_code]  # for each neighbour country
+    }
+
+    return pd.DataFrame(data)
 
 
 def get_all_day_ahead_data(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
                            end: pd.Timestamp) -> pd.DataFrame:
-    """Get all day ahead data for a specified time period.
+    """Get all day ahead data for a specified time period."""
 
-    The time period can be in the past or future, depending on the dataset.
-    
-    :param client: #todo
-    :param configs: #todo
-    :param start: start datetime of requested time period
-    :param end: end datetime of requested time period
-    :return: DataFrame with requested data
-    """
+    # combine multiple base queries
+    query_list = ['day_ahead_prices', 'wind_and_solar_generation', 'load_forecast', 'scheduled_exchanges']
 
-    data = dict()
-
-    # energy prices [€/MWh]
-    data['energy_prices [EUR/MWh]'] = client.query_day_ahead_prices(
-        country_code=configs.general.country_code,
-        start=start,
-        end=end,
-    )
-
-    # wind onshore and solar generation forecast [MW]
-    df_response = client.query_wind_and_solar_forecast(
-        configs.general.country_code,
-        start=start,
-        end=end,
-        psr_type=None,
-    )
-    data['solar_generation [MW]'] = df_response['Solar']
-    data['wind_onshore_generation [MW]'] = df_response['Wind Onshore']
-
-    # total load forecast[MW]
-    df_response = client.query_load_and_forecast(
-        configs.general.country_code,
-        start=start,
-        end=end,
-    )
-    data['total_load [MW]'] = df_response['Forecasted Load']
-
-    # cross-border physical flow forecast (scheduled commercial exchange with neighbors) [MW]
-    for neighbour in NEIGHBOURS[configs.general.country_code]:
-        data[f'scheduled_exchange_{neighbour} [MW]'] = client.query_scheduled_exchanges(
-            country_code_from=configs.general.country_code,
-            country_code_to=neighbour,
-            start=start,
-            end=end,
-            dayahead=False,
-        )
+    responses = {query_name: get_query(client, configs, start, end, query_name) for query_name in query_list}
 
     # save collected data as DataFrame
     # assumes datetimes from df automatically (if data has >1 value per hour, only the first value is saved)
     df = create_empty_hourly_df(start, end)
-    for key in data:
-        df[key] = data[key]
+
+    df['energy_prices [EUR/MWh]'] = responses['day_ahead_prices']
+    df['solar_generation [MW]'] = responses['wind_and_solar_generation']['Solar']
+    df['wind_onshore_generation [MW]'] = responses['wind_and_solar_generation']['Wind Onshore']
+    df['total_load [MW]'] = responses['load_forecast']['Forecasted Load']
+    for neighbour in NEIGHBOURS[configs.general.country_code]:
+        df[f'scheduled_exchange_{neighbour} [MW]'] = responses['scheduled_exchanges'][neighbour]
 
     return df
 
 
 def get_all_historical_data(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
                             end: pd.Timestamp) -> pd.DataFrame:
-    """Get all historic data for a specified time period.
-
-    :param client: #todo
-    :param configs: #todo
-    :param start: start datetime of requested time period
-    :param end: end datetime of requested time period
-    :return: DataFrame with requested data
-    """
+    """Get all historic data for a specified time period."""
 
     data = dict()
 
@@ -119,14 +114,7 @@ def get_all_historical_data(client: EntsoePandasClient, configs: Configs, start:
 
 def get_generation_data_by_energy_source(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
                                          end: pd.Timestamp) -> pd.DataFrame:
-    """Get energy generation data for each energy source.
-    
-    :param client: #todo
-    :param configs: #todo
-    :param start: start datetime of requested time period
-    :param end: stop datetime of requested time period
-    :return: generation data by energy source
-    """
+    """Get energy generation data for each energy source."""
 
     df_generation = get_empty_df(
         start=start,
@@ -176,12 +164,21 @@ def get_energy_imports(client: EntsoePandasClient, configs: Configs, start: pd.T
     return empty_df
 
 
+# simple queries
 queries: dict[str, Query] = {
+    'day_ahead_prices': day_ahead_prices,
+    'wind_and_solar_generation': wind_and_solar_generation,
+    'load_forecast': load_forecast,
+    'scheduled_exchanges': scheduled_exchanges,
+}
+
+# complex queries (consisting of multiple simple queries)
+queries.update({
     "forecast": get_all_day_ahead_data,
     "historical": get_all_historical_data,
     "generation_by_source": get_generation_data_by_energy_source,
     "imports": get_energy_imports,
-}
+})
 
 
 def get_query(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp, query_name: str) \
