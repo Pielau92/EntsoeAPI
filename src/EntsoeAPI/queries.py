@@ -184,17 +184,8 @@ queries: dict[str, Query] = {
 }
 
 
-def get_query(client: EntsoePandasClient, configs: Configs, tp: str | int, query_name: str) -> pd.DataFrame | None:
-    timeperiod = TimePeriod(configs.runtime.date_today)
-
-    if isinstance(tp, str):
-        start, end = timeperiod.__getattribute__(tp)
-    elif isinstance(tp, int):
-        start, end = timeperiod.year(tp)
-    else:
-        print(f'Invalid time period {tp}.')
-        return None
-
+def get_query(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp, query_name: str) \
+        -> pd.DataFrame | None:
     query = queries[query_name]
     try:
         return query(client, configs, start, end)

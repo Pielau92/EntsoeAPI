@@ -17,18 +17,33 @@ class Dataset:
         self.configs = configs
         self.name = name
         self.queries = queries
-        self.timeperiods = timeperiods
         self.export_formats = export_formats
 
+        self.timeperiods: dict[str, tuple[pd.Timestamp, pd.Timestamp]] = {}
+        self.translate_timeperiods(timeperiods)
+
         self.data: dict[tuple[str, str | int], pd.DataFrame] | None = None
+
+    def translate_timeperiods(self, timeperiods: list[str | int]):
+
+        tp = TimePeriod(self.configs.runtime.date_today)
+        for timeperiod in timeperiods:
+            if isinstance(timeperiod, str):
+                start, end = tp.__getattribute__(timeperiod)
+            elif isinstance(timeperiod, int):
+                start, end = tp.year(timeperiod)
+            else:
+                raise ValueError(f'Invalid time period {timeperiod}.')
+            self.timeperiods[timeperiod] = (start, end)
 
     def request_data(self):
 
         self.data = {}
-        for timeperiod in self.timeperiods:
+        for timeperiod, item in self.timeperiods.items():
+            start, end = item
             for query in self.queries:
-                self.data[(query, timeperiod)] = get_query(client=self.client, configs=self.configs, tp=timeperiod,
-                                                           query_name=query)
+                self.data[(query, timeperiod)] = get_query(
+                    client=self.client, configs=self.configs, start=start, end=end, query_name=query)
 
         # self.data = {
         #     (query, timeperiod):  # key
