@@ -161,7 +161,14 @@ queries.update({
 def get_query(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp, query_name: str) \
         -> pd.DataFrame | None:
     query = queries[query_name]
+    print(f'Requesting {query_name} data from {start.strftime('%Y-%m-%d %X')} to {end.strftime('%Y-%m-%d %X')}...')
     try:
-        return query(client, configs, start, end)
+        response = query(client, configs, start, end)
+        print('\tSuccessfull')
+        return response
     except NoMatchingDataError:
-        print(f'NoMatchingDataError encountered, skipping request...')
+        print(f'\tNoMatchingDataError encountered, skipping request...')
+    except Exception as error:
+        print(f'\tUnspecified error {repr(error)} occured')
+
+
