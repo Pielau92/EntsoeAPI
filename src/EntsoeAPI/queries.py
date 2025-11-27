@@ -3,12 +3,11 @@ import pandas as pd
 from typing import Callable
 
 from entsoe import EntsoePandasClient
-from entsoe.mappings import NEIGHBOURS, PSRTYPE_MAPPINGS
+from entsoe.mappings import NEIGHBOURS
 from entsoe.exceptions import NoMatchingDataError
 
-from EntsoeAPI.utils import create_empty_hourly_df, get_empty_df
+from EntsoeAPI.utils import create_empty_hourly_df
 from EntsoeAPI.configs import Configs
-from EntsoeAPI.timeperiod import TimePeriod
 
 type Query = Callable[[EntsoePandasClient, Configs, pd.Timestamp, pd.Timestamp], pd.DataFrame]
 """
@@ -34,7 +33,7 @@ def generation(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp
     response = client.query_generation(configs.general.country_code, start=start, end=end)
     response = response.resample('h').first()  # get hourly values
     response = response[[col for col in response.columns if col[1] == 'Actual Aggregated']]  # get generation data only
-    response.columns = [f'generation_{col[0]}_MW' for col in response.columns]    # overwrite column names
+    response.columns = [f'generation_{col[0]}_MW' for col in response.columns]  # overwrite column names
     return response
 
 
@@ -119,7 +118,7 @@ def get_all_historical_data(
     query_list = [
         'load',
         'generation',
-        'crossborder_flows',
+        'crossborder_exchange',
         'day_ahead_prices'
     ]
 
@@ -134,9 +133,8 @@ def get_all_historical_data(
     df['wind_onshore_generation [MW]'] = responses['generation'][('Wind Onshore', 'Actual Aggregated')]
     df['day_ahead [€/MWh]'] = responses['day_ahead_prices']
     for neighbour in NEIGHBOURS[configs.general.country_code]:
-        df[f'scheduled_exchange_{neighbour} [MW]'] = responses['crossborder_flows'][neighbour]
+        df[f'scheduled_exchange_{neighbour} [MW]'] = responses['crossborder_exchange'][neighbour]
     return df
-
 
 
 # basic queries
@@ -170,5 +168,3 @@ def get_query(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
         print(f'\tNoMatchingDataError encountered, skipping request...')
     except Exception as error:
         print(f'\tUnspecified error {repr(error)} occured')
-
-
