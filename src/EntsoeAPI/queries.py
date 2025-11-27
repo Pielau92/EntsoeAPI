@@ -138,44 +138,6 @@ def get_all_historical_data(
     return df
 
 
-def get_generation_data_by_energy_source(
-        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    """Get energy generation data for each energy source."""
-
-    df_generation = get_empty_df(
-        start=start,
-        end=end,
-        columns=[item for _, item in PSRTYPE_MAPPINGS.items()]
-    )
-
-    for psr_type, energy_source in PSRTYPE_MAPPINGS.items():
-        success = False
-        tries = 2
-        while not success:
-            try:
-                print(f'Requesting generation data for {energy_source}')
-                response = client.query_generation(
-                    country_code=configs.general.country_code, start=start, end=end, psr_type=psr_type)
-                data = pd.DataFrame(response[(energy_source, 'Actual Aggregated')])
-                data.columns = [energy_source]
-                print('Data found')
-                df_generation.update(data)
-                success = True
-            except NoMatchingDataError:
-                print('No data available')
-                success = True
-                continue
-            except:
-                print(f'Unknown error occurred for generation data for {energy_source}')
-                if tries > 0:
-                    print(f'Trying {tries} more time{['', 's'][tries > 1]}')
-                    tries -= 1
-                    continue
-                else:
-                    break
-
-    return df_generation
-
 
 # basic queries
 queries: dict[str, Query] = {
@@ -193,7 +155,6 @@ queries: dict[str, Query] = {
 queries.update({
     "forecast": get_all_day_ahead_data,
     "historical": get_all_historical_data,
-    "generation_by_source": get_generation_data_by_energy_source,
 })
 
 
