@@ -31,7 +31,11 @@ def wind_and_solar_generation_forecast(
 
 
 def generation(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    return client.query_generation(configs.general.country_code, start=start, end=end, psr_type=None)
+    response = client.query_generation(configs.general.country_code, start=start, end=end)
+    response = response.resample('h').first()  # get hourly values
+    response = response[[col for col in response.columns if col[1] == 'Actual Aggregated']]  # get generation data only
+    response.columns = [f'generation_{col[0]}_MW' for col in response.columns]    # overwrite column names
+    return response
 
 
 def load_forecast(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
