@@ -131,8 +131,7 @@ def get_all_historical_data(
     df = create_empty_hourly_df(start, end)
 
     df['total_load [MW]'] = responses['load']
-    df['solar_generation [MW]'] = responses['generation'][('Solar', 'Actual Aggregated')]
-    df['wind_onshore_generation [MW]'] = responses['generation'][('Wind Onshore', 'Actual Aggregated')]
+    df['solar_generation [MW]'] = responses['generation']
     df['day_ahead [€/MWh]'] = responses['day_ahead_prices']
     for neighbour in NEIGHBOURS[configs.general.country_code]:
         df[f'scheduled_exchange_{neighbour} [MW]'] = responses['crossborder_exchange'][neighbour]
