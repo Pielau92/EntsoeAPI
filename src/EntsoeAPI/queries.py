@@ -18,6 +18,8 @@ type Query = Callable[[EntsoePandasClient, Configs, pd.Timestamp, pd.Timestamp],
 :return: DataFrame with requested data
 """
 
+tab_lvl:int = 0
+
 
 def day_ahead_prices(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
@@ -159,12 +161,17 @@ queries.update({
 def get_query(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp, query_name: str) \
         -> pd.DataFrame | None:
     query = queries[query_name]
-    print(f'Requesting {query_name} data from {start.strftime('%Y-%m-%d %X')} to {end.strftime('%Y-%m-%d %X')}...')
+    global tab_lvl
+    print(f'{'\t'*tab_lvl}Requesting {query_name} data from {start.strftime('%Y-%m-%d %X')} to {end.strftime('%Y-%m-%d %X')}...')
     try:
+        tab_lvl += 1
         response = query(client, configs, start, end)
-        print('\tSuccessfull')
+        print(f'{'\t'*tab_lvl}Successfull')
+        tab_lvl -= 1
         return response
     except NoMatchingDataError:
-        print(f'\tNoMatchingDataError encountered, skipping request...')
+        print(f'{'\t'*tab_lvl}NoMatchingDataError encountered, skipping request...')
     except Exception as error:
-        print(f'\tUnspecified error {repr(error)} occured')
+        print(f'{'\t'*tab_lvl}Unspecified error {repr(error)} occured')
+
+    tab_lvl -= 1
