@@ -105,7 +105,7 @@ def get_all_day_ahead_data(
     # combine multiple base queries
     query_list = [
         'day_ahead_prices',
-        'wind_and_solar_generation',
+        'wind_and_solar_generation_forecast',
         'load',
         'scheduled_exchanges'
     ]
@@ -117,11 +117,14 @@ def get_all_day_ahead_data(
     df = create_empty_hourly_df(start, end)
 
     df['energy_prices [EUR/MWh]'] = responses['day_ahead_prices']
-    df['solar_generation [MW]'] = responses['wind_and_solar_generation']['Solar']
-    df['wind_onshore_generation [MW]'] = responses['wind_and_solar_generation']['Wind Onshore']
+    df['solar_generation [MW]'] = responses['wind_and_solar_generation_forecast']['Solar']
+    df['wind_onshore_generation [MW]'] = responses['wind_and_solar_generation_forecast']['Wind Onshore']
     df['total_load [MW]'] = responses['load']
     for neighbour in NEIGHBOURS[configs.general.country_code]:
-        df[f'scheduled_exchange_{neighbour} [MW]'] = responses['scheduled_exchanges'][neighbour]
+        try:
+            df[f'scheduled_exchange_{neighbour} [MW]'] = responses['scheduled_exchanges'][neighbour]
+        except KeyError:
+            pass
 
     return df
 
