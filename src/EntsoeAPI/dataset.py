@@ -75,12 +75,9 @@ class Dataset:
                         format='csv',
                     )
             elif export_format == 'xlsx':
-                timeperiods = [str(timeperiod) for timeperiod in self.timeperiods]
                 export_xlsx_multisheet(
                     data=pages,
-                    path=os.path.join(get_root_dir(), 'data',
-                                      f'{"&".join(self.queries)}_{"&".join(timeperiods)}{'.xlsx'}',
-                                      ),
+                    path=os.path.join(get_root_dir(), 'data', f'{self.name}.xlsx'),
                 )
 
 
