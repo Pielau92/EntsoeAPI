@@ -144,10 +144,13 @@ def get_all_historical_data(
     df = create_empty_hourly_df(start, end)
 
     df['total_load [MW]'] = responses['load']
-    df['solar_generation [MW]'] = responses['generation']
+    df = pd.concat([df, responses['generation']], axis=1)
     df['day_ahead [€/MWh]'] = responses['day_ahead_prices']
     for neighbour in NEIGHBOURS[configs.general.country_code]:
-        df[f'scheduled_exchange_{neighbour} [MW]'] = responses['crossborder_exchange'][neighbour]
+        try:
+            df[f'scheduled_exchange_{neighbour} [MW]'] = responses['crossborder_exchange'][neighbour]
+        except KeyError:
+            pass
     return df
 
 
