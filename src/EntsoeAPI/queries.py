@@ -49,39 +49,52 @@ def load(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end:
 
 def scheduled_exchanges(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    data = {
-        neighbour:  # key
-            client.query_scheduled_exchanges(  # response as value
+    data = {}
+    for neighbour in NEIGHBOURS[configs.general.country_code]:
+        try:
+            data[neighbour] = client.query_scheduled_exchanges(
                 country_code_from=configs.general.country_code,
                 country_code_to=neighbour,
                 start=start,
                 end=end,
-                dayahead=False, )
-        for neighbour in NEIGHBOURS[configs.general.country_code]  # for each neighbour country
-    }
+                dayahead=False,
+            )
+        except ValueError:
+            print(f'{'\t' * tab_lvl}No scheduled exchange data found for {neighbour}.')
 
     return pd.DataFrame(data)
 
 
 def crossborder_exchange(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    data = {
-        neighbour:  # key
-            client.query_crossborder_flows(  # response as value
+    data = {}
+    for neighbour in NEIGHBOURS[configs.general.country_code]:
+        try:
+            data[neighbour] = client.query_crossborder_flows(
                 country_code_from=configs.general.country_code,
                 country_code_to=neighbour,
                 end=end,
                 start=start,
-                lookup_bzones=True)
-        for neighbour in NEIGHBOURS[configs.general.country_code]  # for each neighbour country
-    }
+                lookup_bzones=True,
+            )
+        except ValueError:
+            print(f'{'\t' * tab_lvl}No crossborder exchange data found for {neighbour}.')
 
     return pd.DataFrame(data)
 
 
 def imports(
-        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    return client.query_import(country_code=configs.general.country_code, start=start, end=end).resample('h').first()
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame | None:
+    try:
+        response = client.query_import(
+            country_code=configs.general.country_code,
+            start=start,
+            end=end,
+        ).resample('h').first()
+        return response
+    except ValueError:
+        print(f'{'\t' * tab_lvl}No imports data found.')
+    return
 
 
 def get_all_day_ahead_data(
