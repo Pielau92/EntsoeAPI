@@ -98,7 +98,7 @@ def imports(
     return
 
 
-def get_all_day_ahead_data(
+def get_all_forecast_data(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """Get all day ahead data for a specified time period."""
 
@@ -172,7 +172,7 @@ queries: dict[str, Query] = {
 
 # complex queries (consisting of multiple simple queries)
 queries.update({
-    "forecast": get_all_day_ahead_data,
+    "forecast": get_all_forecast_data,
     "historical": get_all_historical_data,
 })
 
