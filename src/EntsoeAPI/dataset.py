@@ -72,12 +72,20 @@ class Dataset:
                     export_data(
                         data=pages[key],
                         path=os.path.join(get_root_dir(), 'data', f'{key}{'.csv'}'),
-                        format='csv',
+                        format=export_format,
                     )
-            elif export_format == 'xlsx':
-                export_xlsx_multisheet(
+            if export_format == 'xlsx':
+                for key in pages:
+                    export_data(
+                        data=pages[key],
+                        path=os.path.join(get_root_dir(), 'data', f'{key}{'.xlsx'}'),
+                        format=export_format,
+                    )
+            elif export_format == 'xlsx_multisheet':
+                export_data(
                     data=pages,
                     path=os.path.join(get_root_dir(), 'data', f'{self.name}.xlsx'),
+                    format=export_format,
                 )
 
 
