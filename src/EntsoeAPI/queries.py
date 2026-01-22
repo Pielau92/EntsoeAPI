@@ -128,17 +128,7 @@ def get_all_forecast_data(
         'scheduled_exchanges'
     ]
 
-    responses = {query_name: get_query(client, configs, start, end, query_name) for query_name in query_list}
-
-    # save collected data as DataFrame
-    # assumes datetimes from df automatically (if data has >1 value per hour, only the first value is saved)
-    df = create_empty_hourly_df(start, end)
-
-    for query_name in query_list:
-        for col_name in list(responses[query_name].columns):
-            df[col_name] = responses[query_name][col_name]
-
-    return df
+    return get_complex_query(client, configs, start, end, query_list)
 
 
 def get_all_historical_data(
@@ -153,17 +143,7 @@ def get_all_historical_data(
         'day_ahead_prices'
     ]
 
-    responses = {query_name: get_query(client, configs, start, end, query_name) for query_name in query_list}
-
-    # save data as DataFrame
-    # assumes datetimes from df automatically (if data has >1 value per hour, only the first value is saved)
-    df = create_empty_hourly_df(start, end)
-
-    df['total_load [MW]'] = responses['load']
-    df = pd.concat([df, responses['generation']], axis=1)
-    df['day_ahead [€/MWh]'] = responses['day_ahead_prices']
-
-    return df
+    return get_complex_query(client, configs, start, end, query_list)
 
 
 # basic queries
@@ -203,3 +183,20 @@ def get_query(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
     #     print(f'{'\t' * tab_lvl}Unspecified error {repr(error)} occured')
 
     tab_lvl -= 1
+
+
+def get_complex_query(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp,
+                      query_list: list[str]) -> pd.DataFrame:
+    """Combine multiple basic queries into one."""
+
+    responses = {query_name: get_query(client, configs, start, end, query_name) for query_name in query_list}
+
+    # save data as DataFrame
+    # assumes datetimes from df automatically (if data has >1 value per hour, only the first value is saved)
+    df = create_empty_hourly_df(start, end)
+
+    for query_name in query_list:
+        for col_name in list(responses[query_name].columns):
+            df[col_name] = responses[query_name][col_name]
+
+    return df
