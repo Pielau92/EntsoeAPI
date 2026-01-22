@@ -23,29 +23,42 @@ tab_lvl: int = 0
 
 def day_ahead_prices(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    response = client.query_day_ahead_prices(country_code=configs.general.country_code, start=start, end=end,resolution='15min')
-    return response.resample('h').first()
+    response = (client.query_day_ahead_prices(
+        country_code=configs.general.country_code, start=start, end=end, resolution='15min'))
+    response = pd.DataFrame(response)  # convert to DataFrame
+    response.columns = ['energy_prices [EUR/MWh]']  # overwrite column header
+    return response
 
 
 def wind_and_solar_generation_forecast(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    return client.query_wind_and_solar_forecast(configs.general.country_code, start=start, end=end, psr_type=None)
+    response: pd.DataFrame = client.query_wind_and_solar_forecast(
+        configs.general.country_code, start=start, end=end, psr_type=None)
+    mapping = {
+        'Solar': 'solar_generation [MW]',
+        'Wind Onshore': 'wind_onshore_generation [MW]',
+    }
+    response.columns = [mapping.get(col_name, col_name) for col_name in response.columns]  # overwrite column headers
+    return response
 
 
 def generation(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     response = client.query_generation(configs.general.country_code, start=start, end=end)
-    response = response.resample('h').first()  # get hourly values
     response = response[[col for col in response.columns if col[1] == 'Actual Aggregated']]  # get generation data only
-    response.columns = [f'generation_{col[0]}_MW' for col in response.columns]  # overwrite column names
+    response.columns = [f'generation_{col[0]} [MW]' for col in response.columns]  # overwrite column names
     return response
 
 
 def load_forecast(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    return client.query_load_forecast(configs.general.country_code, start=start, end=end)
+    response = client.query_load_forecast(configs.general.country_code, start=start, end=end)
+    response.columns = ['load_forecast [MW]']
+    return response
 
 
 def load(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    return client.query_load(configs.general.country_code, start=start, end=end)
+    response = client.query_load(configs.general.country_code, start=start, end=end)
+    response.columns = ['total_load [MW]']  # overwrite column names
+    return response
 
 
 def scheduled_exchanges(
@@ -53,7 +66,7 @@ def scheduled_exchanges(
     data = {}
     for neighbour in NEIGHBOURS[configs.general.country_code]:
         try:
-            data[neighbour] = client.query_scheduled_exchanges(
+            data[f'scheduled_exchange_{neighbour} [MW]'] = client.query_scheduled_exchanges(
                 country_code_from=configs.general.country_code,
                 country_code_to=neighbour,
                 start=start,
@@ -68,10 +81,10 @@ def scheduled_exchanges(
 
 def crossborder_exchange(
         client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    data = {}
+    responses = {}
     for neighbour in NEIGHBOURS[configs.general.country_code]:
         try:
-            data[neighbour] = client.query_crossborder_flows(
+            responses[f'scheduled_exchange_{neighbour} [MW]'] = client.query_crossborder_flows(
                 country_code_from=configs.general.country_code,
                 country_code_to=neighbour,
                 end=end,
@@ -81,7 +94,7 @@ def crossborder_exchange(
         except ValueError:
             print(f'{'\t' * tab_lvl}No crossborder exchange data found for {neighbour}.')
 
-    return pd.DataFrame(data)
+    return pd.DataFrame(responses)
 
 
 def imports(
@@ -91,11 +104,16 @@ def imports(
             country_code=configs.general.country_code,
             start=start,
             end=end,
-        ).resample('h').first()
-        return response
+        )
+
     except ValueError:
         print(f'{'\t' * tab_lvl}No imports data found.')
-    return
+        return
+
+    # overwrite column headers
+    response.columns = [f'energy_imports_{col_name} [MW]' for col_name in response.columns]
+
+    return response
 
 
 def get_all_forecast_data(
@@ -116,15 +134,9 @@ def get_all_forecast_data(
     # assumes datetimes from df automatically (if data has >1 value per hour, only the first value is saved)
     df = create_empty_hourly_df(start, end)
 
-    df['energy_prices [EUR/MWh]'] = responses['day_ahead_prices']
-    df['solar_generation [MW]'] = responses['wind_and_solar_generation_forecast']['Solar']
-    df['wind_onshore_generation [MW]'] = responses['wind_and_solar_generation_forecast']['Wind Onshore']
-    df['total_load [MW]'] = responses['load']
-    for neighbour in NEIGHBOURS[configs.general.country_code]:
-        try:
-            df[f'scheduled_exchange_{neighbour} [MW]'] = responses['scheduled_exchanges'][neighbour]
-        except KeyError:
-            pass
+    for query_name in query_list:
+        for col_name in list(responses[query_name].columns):
+            df[col_name] = responses[query_name][col_name]
 
     return df
 
@@ -150,11 +162,7 @@ def get_all_historical_data(
     df['total_load [MW]'] = responses['load']
     df = pd.concat([df, responses['generation']], axis=1)
     df['day_ahead [€/MWh]'] = responses['day_ahead_prices']
-    for neighbour in NEIGHBOURS[configs.general.country_code]:
-        try:
-            df[f'scheduled_exchange_{neighbour} [MW]'] = responses['crossborder_exchange'][neighbour]
-        except KeyError:
-            pass
+
     return df
 
 
