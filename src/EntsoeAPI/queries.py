@@ -179,8 +179,8 @@ def get_query(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
         return response
     except NoMatchingDataError:
         print(f'{'\t' * tab_lvl}NoMatchingDataError encountered, skipping request...')
-    # except Exception as error:
-    #     print(f'{'\t' * tab_lvl}Unspecified error {repr(error)} occured')
+    except Exception as error:
+        print(f'{'\t' * tab_lvl}Unspecified error {repr(error)} occured')
 
     tab_lvl -= 1
 
