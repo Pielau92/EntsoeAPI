@@ -88,6 +88,13 @@ class Dataset:
                     format=export_format,
                 )
 
+            elif export_format == 'csv_stacked':
+                export_data(
+                    data=pages,
+                    path=os.path.join(get_root_dir(), 'data', f'{self.name}.csv'),
+                    format=export_format,
+                )
+
 
 if __name__ == '__main__':
     from EntsoeAPI.session import Session

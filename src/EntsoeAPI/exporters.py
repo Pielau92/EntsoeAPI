@@ -25,10 +25,20 @@ def export_xlsx_multisheet(data: dict[str, pd.DataFrame], path: str) -> None:
             df_tz_naive.to_excel(writer, sheet_name=str(key))
 
 
+def export_csv_stacked(data: dict[str, pd.DataFrame], path: str) -> None:
+    # remove last row to avoid duplicates (last value in data is identical to first value in data of adjacent timeperiod)
+    data = {key: data[key].iloc[:-1] for key in data.keys()}
+
+    df = pd.concat(data.values())  # stack data
+    df = df.sort_index()  # sort chronologically
+    df.to_csv(path)  # export
+
+
 exporters: dict[str, ExportFn] = {
     'csv': export_csv,
     'xlsx': export_xlsx,
-    'xlsx_multisheet': export_xlsx_multisheet
+    'xlsx_multisheet': export_xlsx_multisheet,
+    'csv_stacked': export_csv_stacked,
 }
 
 
