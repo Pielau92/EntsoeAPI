@@ -5,6 +5,8 @@ import pandas as pd
 
 from typing import Callable
 
+from utils import remove_leap_day_df
+
 type ExportFn = Callable[[pd.DataFrame, str], None]
 
 
@@ -45,7 +47,15 @@ exporters: dict[str, ExportFn] = {
 def export_data(data: pd.DataFrame, path: str, format: str) -> None:
     print(f'Exporting to {path}')
     exporter = exporters[format]
-    exporter(data, path)
+
+    # convert to hourly data, also remove leap days
+    if isinstance(data, pd.DataFrame):
+        data_hourly = data.resample('h').first()
+        data_hourly = remove_leap_day_df(data_hourly)
+    elif isinstance(data, dict):
+        data_hourly = {key: remove_leap_day_df(data[key].resample('h').first()) for key in data.keys()}
+
+    exporter(data_hourly, path)
 
 
 def export_batch(datasets: dict[str, pd.DataFrame], dirpath: str, format: str) -> None:
