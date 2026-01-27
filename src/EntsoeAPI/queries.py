@@ -3,200 +3,200 @@ import pandas as pd
 from typing import Callable
 
 from entsoe import EntsoePandasClient
-from entsoe.mappings import NEIGHBOURS, PSRTYPE_MAPPINGS
+from entsoe.mappings import NEIGHBOURS
 from entsoe.exceptions import NoMatchingDataError
 
-from EntsoeAPI.utils import create_empty_hourly_df, get_empty_df
+from EntsoeAPI.utils import create_empty_hourly_df
 from EntsoeAPI.configs import Configs
-from EntsoeAPI.timeperiod import TimePeriod
 
 type Query = Callable[[EntsoePandasClient, Configs, pd.Timestamp, pd.Timestamp], pd.DataFrame]
+"""
+:param EntsoePandasClient client: client from entsoe package
+:param Configs configs: configurations
+:param pd.Timestamp start: start datetime of requested time period
+:param pd.Timestamp end: end datetime of requested time period
+:return: DataFrame with requested data
+"""
+
+tab_lvl: int = 0
 
 
-def get_all_day_ahead_data(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
-                           end: pd.Timestamp) -> pd.DataFrame:
-    """Get all day ahead data for a specified time period.
+def day_ahead_prices(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    response = (client.query_day_ahead_prices(
+        country_code=configs.general.country_code, start=start, end=end, resolution='15min'))
+    response = pd.DataFrame(response)  # convert to DataFrame
+    response.columns = ['energy_prices [EUR/MWh]']  # overwrite column header
+    return response
 
-    The time period can be in the past or future, depending on the dataset.
-    
-    :param client: #todo
-    :param configs: #todo
-    :param start: start datetime of requested time period
-    :param end: end datetime of requested time period
-    :return: DataFrame with requested data
-    """
 
-    data = dict()
+def wind_and_solar_generation_forecast(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    response: pd.DataFrame = client.query_wind_and_solar_forecast(
+        configs.general.country_code, start=start, end=end, psr_type=None)
+    mapping = {
+        'Solar': 'solar_generation [MW]',
+        'Wind Onshore': 'wind_onshore_generation [MW]',
+    }
+    response.columns = [mapping.get(col_name, col_name) for col_name in response.columns]  # overwrite column headers
+    return response
 
-    # energy prices [€/MWh]
-    data['energy_prices [EUR/MWh]'] = client.query_day_ahead_prices(
-        country_code=configs.general.country_code,
-        start=start,
-        end=end,
-    )
 
-    # wind onshore and solar generation forecast [MW]
-    df_response = client.query_wind_and_solar_forecast(
-        configs.general.country_code,
-        start=start,
-        end=end,
-        psr_type=None,
-    )
-    data['solar_generation [MW]'] = df_response['Solar']
-    data['wind_onshore_generation [MW]'] = df_response['Wind Onshore']
+def generation(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    response = client.query_generation(configs.general.country_code, start=start, end=end)
+    response = response[[col for col in response.columns if col[1] == 'Actual Aggregated']]  # get generation data only
+    response.columns = [f'generation_{col[0]} [MW]' for col in response.columns]  # overwrite column names
+    return response
 
-    # total load forecast[MW]
-    df_response = client.query_load_and_forecast(
-        configs.general.country_code,
-        start=start,
-        end=end,
-    )
-    data['total_load [MW]'] = df_response['Forecasted Load']
 
-    # cross-border physical flow forecast (scheduled commercial exchange with neighbors) [MW]
+def load_forecast(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    response = client.query_load_forecast(configs.general.country_code, start=start, end=end)
+    response.columns = ['load_forecast [MW]']
+    return response
+
+
+def load(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    response = client.query_load(configs.general.country_code, start=start, end=end)
+    response.columns = ['total_load [MW]']  # overwrite column names
+    return response
+
+
+def scheduled_exchanges(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    data = {}
     for neighbour in NEIGHBOURS[configs.general.country_code]:
-        data[f'scheduled_exchange_{neighbour} [MW]'] = client.query_scheduled_exchanges(
-            country_code_from=configs.general.country_code,
-            country_code_to=neighbour,
+        try:
+            data[f'scheduled_exchange_{neighbour} [MW]'] = client.query_scheduled_exchanges(
+                country_code_from=configs.general.country_code,
+                country_code_to=neighbour,
+                start=start,
+                end=end,
+                dayahead=False,
+            )
+        except ValueError:
+            print(f'{'\t' * tab_lvl}No scheduled exchange data found for {neighbour}.')
+
+    return pd.DataFrame(data)
+
+
+def crossborder_exchange(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    responses = {}
+    for neighbour in NEIGHBOURS[configs.general.country_code]:
+        try:
+            responses[f'scheduled_exchange_{neighbour} [MW]'] = client.query_crossborder_flows(
+                country_code_from=configs.general.country_code,
+                country_code_to=neighbour,
+                end=end,
+                start=start,
+                lookup_bzones=True,
+            )
+        except ValueError:
+            print(f'{'\t' * tab_lvl}No crossborder exchange data found for {neighbour}.')
+
+    return pd.DataFrame(responses)
+
+
+def imports(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame | None:
+    try:
+        response = client.query_import(
+            country_code=configs.general.country_code,
             start=start,
             end=end,
-            dayahead=False,
         )
 
-    # save collected data as DataFrame
-    # assumes datetimes from df automatically (if data has >1 value per hour, only the first value is saved)
-    df = create_empty_hourly_df(start, end)
-    for key in data:
-        df[key] = data[key]
+    except ValueError:
+        print(f'{'\t' * tab_lvl}No imports data found.')
+        return
 
-    return df
+    # overwrite column headers
+    response.columns = [f'energy_imports_{col_name} [MW]' for col_name in response.columns]
 
-
-def get_all_historical_data(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
-                            end: pd.Timestamp) -> pd.DataFrame:
-    """Get all historic data for a specified time period.
-
-    :param client: #todo
-    :param configs: #todo
-    :param start: start datetime of requested time period
-    :param end: end datetime of requested time period
-    :return: DataFrame with requested data
-    """
-
-    data = dict()
-
-    # total load [MW]
-    df_response = client.query_load(configs.general.country_code, start=start, end=end)
-    data['total_load [MW]'] = df_response['Actual Load']
-
-    # wind onshore and solar generation [MW]
-    df_response = client.query_generation(configs.general.country_code, start=start, end=end,
-                                          psr_type=None)
-    data['solar_generation [MW]'] = df_response[('Solar', 'Actual Aggregated')]
-    data['wind_onshore_generation [MW]'] = df_response[('Wind Onshore', 'Actual Aggregated')]
-
-    # cross-border physical flow (scheduled commercial exchange with neighbors) [MW]
-    for neighbour in NEIGHBOURS[configs.general.country_code]:
-        data[f'scheduled_exchange_{neighbour} [MW]'] = client.query_crossborder_flows(
-            country_code_from=configs.general.country_code,
-            country_code_to=neighbour,
-            end=end,
-            start=start,
-            lookup_bzones=True)
-
-    # day ahead price data [€/MWh]
-    df_response = client.query_day_ahead_prices(configs.general.country_code, start=start, end=end,
-                                                resolution='15min')
-    data['day_ahead [€/MWh]'] = df_response
-
-    # save data as DataFrame
-    df = create_empty_hourly_df(start, end)
-    for key in data:
-        df[key] = data[key]
-
-    return df
+    return response
 
 
-def get_generation_data_by_energy_source(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
-                                         end: pd.Timestamp) -> pd.DataFrame:
-    """Get energy generation data for each energy source.
-    
-    :param client: #todo
-    :param configs: #todo
-    :param start: start datetime of requested time period
-    :param end: stop datetime of requested time period
-    :return: generation data by energy source
-    """
+def get_all_forecast_data(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    """Get all day ahead data for a specified time period."""
 
-    df_generation = get_empty_df(
-        start=start,
-        end=end,
-        columns=[item for _, item in PSRTYPE_MAPPINGS.items()]
-    )
+    # combine multiple base queries
+    query_list = [
+        'day_ahead_prices',
+        'wind_and_solar_generation_forecast',
+        'load',
+        'scheduled_exchanges'
+    ]
 
-    for psr_type, energy_source in PSRTYPE_MAPPINGS.items():
-        success = False
-        tries = 2
-        while not success:
-            try:
-                print(f'Requesting generation data for {energy_source}')
-                response = client.query_generation(
-                    country_code=configs.general.country_code, start=start, end=end, psr_type=psr_type)
-                data = pd.DataFrame(response[(energy_source, 'Actual Aggregated')])
-                data.columns = [energy_source]
-                print('Data found')
-                df_generation.update(data)
-                success = True
-            except NoMatchingDataError:
-                print('No data available')
-                success = True
-                continue
-            except:
-                print(f'Unknown error occurred for generation data for {energy_source}')
-                if tries > 0:
-                    print(f'Trying {tries} more time{['', 's'][tries > 1]}')
-                    tries -= 1
-                    continue
-                else:
-                    break
-
-    return df_generation
+    return get_complex_query(client, configs, start, end, query_list)
 
 
-def get_energy_imports(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp,
-                       end: pd.Timestamp) -> pd.DataFrame:
-    empty_df = get_empty_df(start=start, end=end, columns=NEIGHBOURS[configs.general.country_code])
+def get_all_historical_data(
+        client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    """Get all historic data for a specified time period."""
 
-    empty_df.update(client.query_import(
-        country_code=configs.general.country_code,
-        start=start,
-        end=end
-    ).resample('h').first())
+    # combine multiple base queries
+    query_list = [
+        'load',
+        'generation',
+        'crossborder_exchange',
+        'day_ahead_prices'
+    ]
 
-    return empty_df
+    return get_complex_query(client, configs, start, end, query_list)
 
 
+# basic queries
 queries: dict[str, Query] = {
-    "forecast": get_all_day_ahead_data,
-    "historical": get_all_historical_data,
-    "generation_by_source": get_generation_data_by_energy_source,
-    "imports": get_energy_imports,
+    'day_ahead_prices': day_ahead_prices,
+    'wind_and_solar_generation_forecast': wind_and_solar_generation_forecast,
+    'generation': generation,
+    'load_forecast': load_forecast,
+    'load': load,
+    'scheduled_exchanges': scheduled_exchanges,
+    'crossborder_exchange': crossborder_exchange,
+    'imports': imports,
 }
 
+# complex queries (consisting of multiple simple queries)
+queries.update({
+    "forecast": get_all_forecast_data,
+    "historical": get_all_historical_data,
+})
 
-def get_query(client: EntsoePandasClient, configs: Configs, tp: str | int, query_name: str) -> pd.DataFrame | None:
-    timeperiod = TimePeriod(configs.runtime.date_today)
 
-    if isinstance(tp, str):
-        start, end = timeperiod.__getattribute__(tp)
-    elif isinstance(tp, int):
-        start, end = timeperiod.year(tp)
-    else:
-        print(f'Invalid time period {tp}.')
-        return None
-
+def get_query(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp, query_name: str) \
+        -> pd.DataFrame | None:
     query = queries[query_name]
+    global tab_lvl
+    print(f'{'\t' * tab_lvl}Requesting {query_name} data from {start.strftime('%Y-%m-%d %X')} to '
+          f'{end.strftime('%Y-%m-%d %X')}...')
     try:
-        return query(client, configs, start, end)
+        tab_lvl += 1
+        response = query(client, configs, start, end)
+        print(f'{'\t' * tab_lvl}Successfull')
+        tab_lvl -= 1
+        return response
     except NoMatchingDataError:
-        print(f'NoMatchingDataError encountered, skipping request...')
+        print(f'{'\t' * tab_lvl}NoMatchingDataError encountered, skipping request...')
+    except Exception as error:
+        print(f'{'\t' * tab_lvl}Unspecified error {repr(error)} occured')
+
+    tab_lvl -= 1
+
+
+def get_complex_query(client: EntsoePandasClient, configs: Configs, start: pd.Timestamp, end: pd.Timestamp,
+                      query_list: list[str]) -> pd.DataFrame:
+    """Combine multiple basic queries into one."""
+
+    responses = {query_name: get_query(client, configs, start, end, query_name) for query_name in query_list}
+
+    # save data as DataFrame
+    # assumes datetimes from df automatically (if data has >1 value per hour, only the first value is saved)
+    df = create_empty_hourly_df(start, end)
+
+    for query_name in query_list:
+        for col_name in list(responses[query_name].columns):
+            df[col_name] = responses[query_name][col_name]
+
+    return df
